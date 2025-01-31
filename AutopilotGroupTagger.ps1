@@ -445,23 +445,23 @@ Write-Host "Found $($autopilotDevices.Count) Windows Autopilot Devices from Micr
 $autopilotUpdateDevicesCount = 0
 while ($autopilotUpdateDevicesCount -eq 0) {
     Write-Host
-    Write-Host ' Please Choose one of the Group Tag options below: ' -ForegroundColor Magenta
+    Write-Host 'Please Choose one of the Group Tag options below: ' -ForegroundColor Magenta
     Write-Host
-    Write-Host ' (1) Update All Autopilot Devices Group Tags' -ForegroundColor Yellow
+    Write-Host ' (1) Update All Autopilot Devices Group Tags'
     Write-Host
-    Write-Host ' (2) Update All Autopilot Devices with Empty Group Tags' -ForegroundColor Yellow
+    Write-Host ' (2) Update All Autopilot Devices with Empty Group Tags'
     Write-Host
-    Write-Host ' (3) Update All Autopilot Devices with a specific Group Tag' -ForegroundColor Yellow
+    Write-Host ' (3) Update All Autopilot Devices with a specific Group Tag'
     Write-Host
-    Write-Host ' (4) Update All selected Manufacturers of Autopilot Device Group Tags' -ForegroundColor Yellow
+    Write-Host ' (4) Update All selected Manufacturers of Autopilot Device Group Tags'
     Write-Host
-    Write-Host ' (5) Update All selected Models of Autopilot Device Group Tags' -ForegroundColor Yellow
+    Write-Host ' (5) Update All selected Models of Autopilot Device Group Tags'
     Write-Host
-    Write-Host ' (6) Update All Autopilot Devices with a specific Purchase Order' -ForegroundColor Yellow
+    Write-Host ' (6) Update All Autopilot Devices with a specific Purchase Order'
     Write-Host
-    Write-Host ' (7) Update a selection of Autopilot Devices Group Tags interactively' -ForegroundColor Yellow
+    Write-Host ' (7) Update a selection of Autopilot Devices Group Tags interactively'
     Write-Host
-    Write-Host ' (8) Update Autopilot Devices Group Tags using exported data' -ForegroundColor Yellow
+    Write-Host ' (8) Update Autopilot Devices Group Tags using exported data'
     Write-Host
     Write-Host ' (E) EXIT SCRIPT ' -ForegroundColor Red
     Write-Host
@@ -481,6 +481,14 @@ while ($autopilotUpdateDevicesCount -eq 0) {
     if ($choice -eq '2') {
         #All AutoPilot Devices with Empty Group Tags
         $autopilotUpdateDevices = $autopilotDevices | Where-Object { ($null -eq $_.groupTag) -or ($_.groupTag) -eq '' }
+        if ($autopilotUpdateDevices.count -eq 0) {
+            Write-Host
+            Write-Host 'No Autopilot Devices with Empty Group Tags found.' -ForegroundColor Yellow
+            Write-Host
+            Write-Host 'Please select another option.' -ForegroundColor Cyan
+            Write-Host
+            continue
+        }
     }
     if ($choice -eq '3') {
         # GroupTag prompts
