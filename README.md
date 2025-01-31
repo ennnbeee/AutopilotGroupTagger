@@ -1,14 +1,4 @@
-<h1 align="center">🍺 AutopilotGroupTagger</h1>
-
-<div align="center">
-  <p>
-    <a href="https://www.linkedin.com/in/ennnbeee/">
-      <img src="https://img.shields.io/badge/LinkedIn-Connect-0A66C2?style=flat&logo=linkedin" alt="LinkedIn"/>
-    </a>
-  <p>
-</div>
-
-# AutopilotGroupTagger
+# 🏷 AutopilotGroupTagger
 
 AutoPilotGroupTagger is a PowerShell 7 based utility that allows for bulk update and management of Windows Autopilot Device Group Tags, for those who are either retrospectively updating Autopilot devices or otherwise.
 
@@ -46,7 +36,7 @@ Run the script without any parameters:
 
 ### Authentication with TenantId
 
-Run the script with the your Entra ID Tenant ID passed to the `tenantID` parameter:
+Run the script with the your Entra ID Tenant ID passed to the `tenantID` parameter e.g.:
 
 ```powershell
 .\AutopilotGroupTagger.ps1 -tenantID '437e8ffb-3030-469a-99da-e5b527908099'
@@ -62,8 +52,8 @@ Create an Entra ID App Registration with the following Graph API Application per
 
 Create an App Secret for the App Registration to be used when running the script.
 
-Then run the script with the corresponding Entra ID Tenant ID, AppId and AppSecret passed to the parameters:
+Then run the script with the corresponding Entra ID Tenant ID, AppId and AppSecret passed to the parameters e.g.:
 
 ```powershell
-.\AutopilotGroupTagger.ps1 -tenantID '437e8ffb-3030-469a-99da-e5b527908010' -appId 'APPID' -appSecret 'APPSECRET'
+.\AutopilotGroupTagger.ps1 -tenantID '437e8ffb-3030-469a-99da-e5b527908099' -appId '799ebcfa-ca81-4e63-baaf-a35123164d78' -appSecret 'g708Q~uot4xo9dU_1TjGQIuUr0UyBHNZmY2mdcy6'
 ```
