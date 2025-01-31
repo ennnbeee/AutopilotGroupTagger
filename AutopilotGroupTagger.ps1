@@ -36,7 +36,6 @@ PS> .\AutopilotGroupTagger.ps1 -tenantId '437e8ffb-3030-469a-99da-e5b527908099' 
 
 #>
 
-
 [CmdletBinding()]
 
 param(
@@ -474,14 +473,6 @@ while ($autopilotUpdateDevicesCount -eq 0) {
         $autopilotUpdateDevices = $autopilotDevices | Where-Object { ($null -eq $_.groupTag) -or ($_.groupTag) -eq '' }
     }
     if ($choice -eq '3') {
-        # Specific Group Tag
-        [string]$groupTagOld = Read-Host 'Please enter the group tag you wish to update'
-        while ($groupTagOld -eq '' -or $null -eq $groupTagOld) {
-            [string]$groupTagOld = Read-Host 'Please enter the group tag you wish to update'
-        }
-        #All AutoPilot Devices with Specific Group Tag
-        $autopilotUpdateDevices = $autopilotDevices | Where-Object { $_.groupTag -eq $groupTagOld }
-
         # GroupTag prompts
         while ($autopilotGroupTags.count -eq 0) {
             $autopilotGroupTags = @($autopilotDevices | Select-Object -Property groupTag -Unique | Out-GridView -PassThru -Title 'Select GroupTags of Autopilot Devices to Update')
@@ -554,7 +545,4 @@ foreach ($autopilotUpdateDevice in $autopilotUpdateDevices) {
 }
 
 Write-Host "Successfully updated $autopilotUpdateDevicesCount Autopilot devices with the new group tag" -ForegroundColor Green
-Write-Host 'Disconnecting from Microsoft Graph...' -ForegroundColor Cyan
-Disconnect-MgGraph
-
 #endregion Script
