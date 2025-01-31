@@ -57,14 +57,32 @@ Then run the script with the corresponding Entra ID Tenant ID, AppId and AppSecr
 
 ### 🔐 Authentication
 
+Authentication using the App Registration looks something like the below:
+
 ![AutoPilotGroupTagger](img/AutopilotGroupTagger.gif)
 
-Select one of the options to start applying Group Tags to your Autopilot Devices:
+Then select one of the options to start applying Group Tags to your Autopilot Devices:
 
-- 💻🖥 Update **All Windows Autopilot Devices** with a new Group Tag
-- 💻❌ Update Windows Autopilot Devices with **an empty Group Tag** with a new Group Tag
-- 💻🏷 Update Windows Autopilot Devices with **specific existing Group Tags** with a new Group Tag
-- 💻🏢 Update **specific manufacturers** of Windows Autopilot Devices with a new Group Tag
-- 💻🏠 Update **specific models** of Windows Autopilot Devices with a new Group Tag
-- 💻❔ Update **specific interactively selected** Windows Autopilot Devices with a new Group Tag
-- 💻📔 Export Windows Autopilot Device data, and **selectively update** multiple devices with new Group Tags
+- 1️⃣ Update **All Windows Autopilot Devices** with a new Group Tag 💻🖥
+- 2️⃣ Update Windows Autopilot Devices with **an empty Group Tag** with a new Group Tag 💻❌
+- 3️⃣ Update Windows Autopilot Devices with **specific existing Group Tags** with a new Group Tag 💻🏷
+- 4️⃣ Update **specific manufacturers** of Windows Autopilot Devices with a new Group Tag 💻🏢
+- 5️⃣ Update **specific models** of Windows Autopilot Devices with a new Group Tag 💻🏠
+- 6️⃣ Update **specific interactively selected** Windows Autopilot Devices with a new Group Tag 💻❔
+- 7️⃣ Export Windows Autopilot Device data, and **selectively update** multiple devices with new Group Tags 💻📔
+- 🔚 Exit the script before you cause yourself some problems 💻😅
+
+## 📜 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 📞 Support
+
+If you encounter any issues or have questions:
+
+1. Check the [Issues](https://github.com/ennnbeee/AutopilotGroupTagger/issues) page
+2. Open a new issue if needed
+
+---
+
+Made with  by [Nick Benton](https://github.com/ugurennnbeeekocde)
