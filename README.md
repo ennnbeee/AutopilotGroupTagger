@@ -72,6 +72,7 @@ Once authenticated select one of the options to start applying Group Tags to you
 - 5️⃣ Update **specific models** of Windows Autopilot Devices with a new Group Tag 💻🏠
 - 6️⃣ Update **specific interactively selected** Windows Autopilot Devices with a new Group Tag 💻❔
 - 7️⃣ Export Windows Autopilot Device data, and **selectively update** multiple devices with new Group Tags 💻📔
+- 8️⃣ Update Windows Autopilot Devices with **specific Purchase Order** with a new Group Tag 💻💰 **NEW**
 - 🔚 Exit the script before you cause yourself some problems 💻😅
 
 ## 🎬 Demos

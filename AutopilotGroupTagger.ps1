@@ -9,9 +9,13 @@ The script will connect to the Microsoft Graph API and retrieve all Autopilot de
 .NOTES
 File Name      : AutopilotGroupTagger.ps1
 Author         : Nick Benton
-Prerequisite   : PowerShell 7+, Microsoft Graph PowerShell SDK
-Version        : 0.1 Preview
+Prerequisite   : PowerShell 7, Microsoft Graph PowerShell SDK
+Version        : 0.2 Preview
 Date           : 2025-01-31
+Updates:
+    - 2025-01-31: 0.1 Initial release
+    - 2025-01-31: 0.2 Included functionality to update group tags based on Purchase order
+
 
 .LINK
 https://github.com/ennnbeee/AutopilotGroupTagger
@@ -26,12 +30,15 @@ Provide the Id of the Entra App registration to be used for authentication.
 Provide the App secret to allow for authentication to graph
 
 .EXAMPLE
+Interactive Authentication
 PS> .\AutopilotGroupTagger.ps1
 
 .EXAMPLE
+Pass through Authentication
 PS> .\AutopilotGroupTagger.ps1 -tenantId '437e8ffb-3030-469a-99da-e5b527908099'
 
 .EXAMPLE
+App Authentication
 PS> .\AutopilotGroupTagger.ps1 -tenantId '437e8ffb-3030-469a-99da-e5b527908099' -appId '799ebcfa-ca81-4e72-baaf-a35126464d67' -appSecret 'g708Q~uof4xo9dU_1EjGQIuUr0UyBHNZmY2mcdy6'
 
 #>
@@ -319,7 +326,7 @@ Write-Host '
 
 Write-Host 'Autopilot GroupTagger - Update Autopilot Device Group Tags in bulk.' -ForegroundColor Green
 Write-Host 'Nick Benton - oddsandendpoints.co.uk' -NoNewline;
-Write-Host ' | Version' -NoNewline; Write-Host ' 0.1 Public Preview' -ForegroundColor Yellow -NoNewline
+Write-Host ' | Version' -NoNewline; Write-Host ' 0.2 Public Preview' -ForegroundColor Yellow -NoNewline
 Write-Host ' | Last updated: ' -NoNewline; Write-Host '2025-01-31' -ForegroundColor Magenta
 Write-Host ''
 Write-Host 'If you have any feedback, please open an issue at https://github.com/ennnbeee/AutopilotGroupTagger/issues' -ForegroundColor Cyan
@@ -386,7 +393,7 @@ Write-Host 'All required scope permissions are present.' -ForegroundColor Green
 
 #region discovery
 Start-Sleep -Seconds 2  # Delay to allow for Graph API to catch up
-Write-Host ""
+Write-Host ''
 Write-Host 'Getting all Entra ID Windows computer objects...' -ForegroundColor Cyan
 $entraDevices = Get-EntraIDObject -object Device
 $entraDevicesOptimised = @{}
@@ -395,7 +402,7 @@ foreach ($entraDevice in $entraDevices) {
 }
 Write-Host "Found $($entraDevices.Count) Windows devices and associated IDs from Entra ID." -ForegroundColor Green
 
-Write-Host ""
+Write-Host ''
 Write-Host 'Getting all Intune Windows devices...' -ForegroundColor Cyan
 $intuneDevices = Get-ManagedDevices
 $intuneDevicesOptimised = @{}
@@ -403,7 +410,7 @@ foreach ($intuneDevice in $intuneDevices) {
     $intuneDevicesOptimised[$intuneDevice.id] = $intuneDevice
 }
 Write-Host "Found $($intuneDevices.Count) Windows device objects and associated IDs from Microsoft Intune." -ForegroundColor Green
-Write-Host ""
+Write-Host ''
 
 Write-Host 'Getting all Windows Autopilot devices...' -ForegroundColor Cyan
 $apDevices = Get-AutopilotDevices
@@ -423,6 +430,7 @@ foreach ($apDevice in $apDevices) {
         'enrolmentProfile' = $entraObject.enrollmentProfileName
         'enrolmentType'    = $entraObject.enrollmentType
         'groupTag'         = $apDevice.groupTag
+        'purchaseOrder'    = $apDevice.purchaseOrderIdentifier
         'Id'               = $apDevice.Id
     }
 }
@@ -449,16 +457,18 @@ while ($autopilotUpdateDevicesCount -eq 0) {
     Write-Host
     Write-Host ' (5) Update All selected Models of Autopilot Device Group Tags' -ForegroundColor Yellow
     Write-Host
-    Write-Host ' (6) Update a selection of Autopilot Devices Group Tags interactively' -ForegroundColor Yellow
+    Write-Host ' (6) Update All Autopilot Devices with a specific Purchase Order' -ForegroundColor Yellow
     Write-Host
-    Write-Host ' (7) Update Autopilot Devices Group Tags using exported data' -ForegroundColor Yellow
+    Write-Host ' (7) Update a selection of Autopilot Devices Group Tags interactively' -ForegroundColor Yellow
+    Write-Host
+    Write-Host ' (8) Update Autopilot Devices Group Tags using exported data' -ForegroundColor Yellow
     Write-Host
     Write-Host ' (E) EXIT SCRIPT ' -ForegroundColor Red
     Write-Host
     $choice = ''
     $autopilotUpdateDevices = @()
     $choice = Read-Host -Prompt 'Please select an option from the provided list, then press enter'
-    while ( $choice -notin @('1', '2', '3', '4', '5', '6', '7', 'E')) {
+    while ( $choice -notin @('1', '2', '3', '4', '5', '6', '7', '8', 'E')) {
         $choice = Read-Host -Prompt 'Please select an option from the provided list, then press enter'
     }
     if ($choice -eq 'E') {
@@ -493,9 +503,7 @@ while ($autopilotUpdateDevicesCount -eq 0) {
         while ($autopilotModels.count -eq 0) {
             $autopilotModels = @($autopilotDevices | Select-Object -Property model -Unique | Out-GridView -PassThru -Title 'Select Models of Autopilot Devices to Update')
         }
-
         $autopilotUpdateDevices = $autopilotDevices | Where-Object { $_.model -in $autopilotModels.model }
-
     }
     if ($choice -eq '6') {
         $autopilotUpdateDevices = @($autopilotDevices | Out-GridView -PassThru -Title 'Select Autopilot Devices to Update')
@@ -512,7 +520,13 @@ while ($autopilotUpdateDevicesCount -eq 0) {
                 $autopilotUpdateDevices += $autopilotImportDevice
             }
         }
-
+    }
+    if ($choice -eq '8') {
+        # Purchase Order prompts
+        while ($autopilotPOs.count -eq 0) {
+            $autopilotPOs = @($autopilotDevices | Select-Object -Property purchaseOrder -Unique | Out-GridView -PassThru -Title 'Select Purchase Order of Autopilot Devices to Update')
+        }
+        $autopilotUpdateDevices = $autopilotDevices | Where-Object { $_.purchaseOrder -in $autopilotPOs.purchaseOrder }
     }
 
     $autopilotUpdateDevicesCount = $autopilotUpdateDevices.Count
