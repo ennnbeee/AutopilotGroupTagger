@@ -65,5 +65,5 @@ Create an App Secret for the App Registration to be used when running the script
 Then run the script with the corresponding Entra ID Tenant ID, AppId and AppSecret passed to the parameters:
 
 ```powershell
-.\AutopilotGroupTagger.ps1 -tenantID '437e8ffb-3030-469a-99da-e5b527908010' -appId '799ebcfa-ca81-4e63-baaf-a35126464d67' -appSecret 'g708Q~uot4xo9dU_1EjGQIuUr0UyBHNZmY2mcdy6'
+.\AutopilotGroupTagger.ps1 -tenantID '437e8ffb-3030-469a-99da-e5b527908010' -appId 'APPID' -appSecret 'APPSECRET'
 ```
