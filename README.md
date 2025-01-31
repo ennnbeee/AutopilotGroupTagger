@@ -1,25 +1,69 @@
+<h1 align="center">🍺 AutopilotGroupTagger</h1>
+
+<div align="center">
+  <p>
+    <a href="https://www.linkedin.com/in/ennnbeee/">
+      <img src="https://img.shields.io/badge/LinkedIn-Connect-0A66C2?style=flat&logo=linkedin" alt="LinkedIn"/>
+    </a>
+  <p>
+</div>
+
 # AutopilotGroupTagger
 
-## 🚀 Getting Started
+AutoPilotGroupTagger is a PowerShell 7 based utility that allows for bulk update and management of Windows Autopilot Device Group Tags, for those who are either retrospectively updating Autopilot devices or otherwise.
 
-### Prerequisites
+## Public Preview Notice
 
-- PowerShell 7.0 or higher
-- Microsoft.Graph.Authentication Module must be installed
-- Azure App Registration with appropriate permissions OR Manual Connection via Interactive Sign-In
-- Windows operating system
+> [!IMPORTANT]
+> AutoPilotGroupTagger is currently in Public Preview, meaning that although the utility is functional, you may encounter issues or bugs with the script.
+>
+>To help fix or contribute to the success of this script, feedback or contributions are crucial for improving the script.
+>
+> - 📝 [Submit Feedback](https://github.com/ennnbeee/AutopilotGroupTagger/issues/new?labels=feedback)
+> - 🐛 [Report Bugs](https://github.com/ennnbeee/AutopilotGroupTagger/issues/new?labels=bug)
+> - 💡 [Request Features](https://github.com/ennnbeee/AutopilotGroupTagger/issues/new?labels=enhancement)
+>
+> Thank you for your support.
 
-## 📝 Usage
+## Prerequisites
 
-### Basic Usage
+- Tested on PowerShell 7.0 or higher
+- Microsoft.Graph.Authentication Module should be installed, the script will detect and install if required.
+- Entra ID App Registration with appropriate Graph Scopes or using Interactive Sign-In with a privileged account
+- Windows Operating System
 
-Download the script: IntuneBrew.ps1
+## Authentication
 
-Run the script:
+Download the script: AutopilotGroupTagger.ps1
+
+### Interactive Authentication
+
+Run the script without any parameters:
 
 ```powershell
 .\AutopilotGroupTagger.ps1
 ```
 
-Follow the interactive prompts to:
+### Authentication with TenantId
 
+Run the script with the your Entra ID Tenant ID passed to the `tenantID` parameter:
+
+```powershell
+.\AutopilotGroupTagger.ps1 -tenantID '437e8ffb-3030-469a-99da-e5b527908099'
+```
+
+### Authentication with App Registration
+
+Create an Entra ID App Registration with the following Graph API Application permissions:
+
+- `DeviceManagementServiceConfig.ReadWrite.All`
+- `Device.Read.All`
+- `DeviceManagementManagedDevices.Read.All`
+
+Create an App Secret for the App Registration to be used when running the script.
+
+Then run the script with the corresponding Entra ID Tenant ID, AppId and AppSecret passed to the parameters:
+
+```powershell
+.\AutopilotGroupTagger.ps1 -tenantID '437e8ffb-3030-469a-99da-e5b527908010' -appId '799ebcfa-ca81-4e63-baaf-a35126464d67' -appSecret 'g708Q~uot4xo9dU_1EjGQIuUr0UyBHNZmY2mcdy6'
+```

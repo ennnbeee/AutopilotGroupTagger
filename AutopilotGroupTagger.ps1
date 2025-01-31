@@ -1,7 +1,20 @@
 <#
 .SYNOPSIS
+Autopilot GroupTagger - Update Autopilot Device Group Tags in bulk.
 
 .DESCRIPTION
+The Autopilot GroupTagger script is designed to allow for bulk updating of Autopilot device group tags in Microsoft Intune.
+The script will connect to the Microsoft Graph API and retrieve all Autopilot devices, then allow for bulk updating of group tags based on various criteria.
+
+.NOTES
+File Name      : AutopilotGroupTagger.ps1
+Author         : Nick Benton
+Prerequisite   : PowerShell 7+, Microsoft Graph PowerShell SDK
+Version        : 0.1 Preview
+Date           : 2025-01-31
+
+.LINK
+https://github.com/ennnbeee/AutopilotGroupTagger
 
 .PARAMETER tenantId
 Provide the Id of the tenant to connect to.
@@ -14,6 +27,12 @@ Provide the App secret to allow for authentication to graph
 
 .EXAMPLE
 PS> .\AutopilotGroupTagger.ps1
+
+.EXAMPLE
+PS> .\AutopilotGroupTagger.ps1 -tenantId '437e8ffb-3030-469a-99da-e5b527908099'
+
+.EXAMPLE
+PS> .\AutopilotGroupTagger.ps1 -tenantId '437e8ffb-3030-469a-99da-e5b527908099' -appId '799ebcfa-ca81-4e72-baaf-a35126464d67' -appSecret 'g708Q~uof4xo9dU_1EjGQIuUr0UyBHNZmY2mcdy6'
 
 #>
 
@@ -289,13 +308,6 @@ Function Get-ManagedDevices() {
 }
 #endregion Functions
 
-
-#region user variables
-$tenantId = '437e8ffb-3030-469a-99da-e5b527908010'
-$appId = '' # Enterprise App (Service Principal) App ID
-$appSecret = '' # Enterprise App (Service Principal) Secret
-#endregion user variables
-
 #region intro
 Write-Host '
 ▄▀█ █░█ ▀█▀ █▀█ █▀█ █ █░░ █▀█ ▀█▀
@@ -311,12 +323,12 @@ Write-Host 'Nick Benton - oddsandendpoints.co.uk' -NoNewline;
 Write-Host ' | Version' -NoNewline; Write-Host ' 0.1 Public Preview' -ForegroundColor Yellow -NoNewline
 Write-Host ' | Last updated: ' -NoNewline; Write-Host '2025-01-31' -ForegroundColor Magenta
 Write-Host ''
-Write-Host 'This is a preview version. If you have any feedback, please open an issue at https://github.com/ennnbeee/AutopilotGroupTagger/issues' -ForegroundColor Cyan
+Write-Host 'If you have any feedback, please open an issue at https://github.com/ennnbeee/AutopilotGroupTagger/issues' -ForegroundColor Cyan
 Write-Host ''
 #endregion intro
 
 #region variables
-$requiredScopes = @('Device.Read.All', 'DeviceManagementConfiguration.Read.All', 'DeviceManagementManagedDevices.ReadWrite.All', 'DeviceManagementConfiguration.ReadWrite.All')
+$requiredScopes = @('Device.Read.All', 'DeviceManagementServiceConfig.ReadWrite.All', 'DeviceManagementManagedDevices.Read.All')
 [String[]]$scopes = $requiredScopes -join ', '
 #endregion variables
 
@@ -325,37 +337,37 @@ $graphModule = 'Microsoft.Graph.Authentication'
 Write-Host "Checking for $graphModule PowerShell module..." -ForegroundColor Cyan
 
 If (!(Find-Module -Name $graphModule)) {
-    Install-Module -Name $graphModule -Scope CurrentUser
+    Install-Module -Name $graphModule -Scope CurrentUser -AllowClobber
 }
 Write-Host "PowerShell Module $graphModule found." -ForegroundColor Green
 
 if (!([System.AppDomain]::CurrentDomain.GetAssemblies() | Where-Object FullName -Like "*$graphModule*")) {
     Import-Module -Name $graphModule -Force
 }
-
-if (Get-MgContext -ErrorAction SilentlyContinue) {
-    Write-Host 'Disconnecting from existing Graph session.' -ForegroundColor Cyan
-    Disconnect-MgGraph
-    Write-Host 'Disconnected from existing Graph session.' -ForegroundColor Green
-}
 #endregion module check
 
 #region app auth
-if (!$tenantId) {
-    Write-Host 'Connecting using interactive authentication' -ForegroundColor Yellow
-    Connect-MgGraph -Scopes $scopes -NoWelcome -ErrorAction Stop
-}
-else {
-    if ((!$appId -and !$appSecret) -or ($appId -and !$appSecret) -or (!$appId -and $appSecret)) {
-        Write-Host 'Missing App Details, connecting using user authentication' -ForegroundColor Yellow
-        Connect-ToGraph -tenantId $tenantId -Scopes $scopes -ErrorAction Stop
+try {
+    if (!$tenantId) {
+        Write-Host 'Connecting using interactive authentication' -ForegroundColor Yellow
+        Connect-MgGraph -Scopes $scopes -NoWelcome -ErrorAction Stop
     }
     else {
-        Write-Host 'Connecting using App authentication' -ForegroundColor Yellow
-        Connect-ToGraph -tenantId $tenantId -appId $appId -appSecret $appSecret -ErrorAction Stop
+        if ((!$appId -and !$appSecret) -or ($appId -and !$appSecret) -or (!$appId -and $appSecret)) {
+            Write-Host 'Missing App Details, connecting using user authentication' -ForegroundColor Yellow
+            Connect-ToGraph -tenantId $tenantId -Scopes $scopes -ErrorAction Stop
+        }
+        else {
+            Write-Host 'Connecting using App authentication' -ForegroundColor Yellow
+            Connect-ToGraph -tenantId $tenantId -appId $appId -appSecret $appSecret -ErrorAction Stop
+        }
     }
+    Write-Host 'Successfully connected to Microsoft Graph.' -ForegroundColor Green
 }
-Write-Host 'Successfully connected to Microsoft Graph.' -ForegroundColor Green
+catch {
+    Write-Error $_.Exception.Message
+    Exit
+}
 #endregion app auth
 
 #region scopes
@@ -374,7 +386,9 @@ Write-Host 'All required scope permissions are present.' -ForegroundColor Green
 #endregion scopes
 
 #region discovery
-Write-Host 'Getting all EntraID computer objects...' -ForegroundColor Cyan
+Start-Sleep -Seconds 2  # Delay to allow for Graph API to catch up
+Write-Host ""
+Write-Host 'Getting all Entra ID Windows computer objects...' -ForegroundColor Cyan
 $entraDevices = Get-EntraIDObject -object Device
 $entraDevicesOptimised = @{}
 foreach ($entraDevice in $entraDevices) {
@@ -382,6 +396,7 @@ foreach ($entraDevice in $entraDevices) {
 }
 Write-Host "Found $($entraDevices.Count) Windows devices and associated IDs from Entra ID." -ForegroundColor Green
 
+Write-Host ""
 Write-Host 'Getting all Intune Windows devices...' -ForegroundColor Cyan
 $intuneDevices = Get-ManagedDevices
 $intuneDevicesOptimised = @{}
@@ -389,7 +404,7 @@ foreach ($intuneDevice in $intuneDevices) {
     $intuneDevicesOptimised[$intuneDevice.id] = $intuneDevice
 }
 Write-Host "Found $($intuneDevices.Count) Windows device objects and associated IDs from Microsoft Intune." -ForegroundColor Green
-
+Write-Host ""
 
 Write-Host 'Getting all Windows Autopilot devices...' -ForegroundColor Cyan
 $apDevices = Get-AutopilotDevices
@@ -423,7 +438,7 @@ Write-Host "Found $($autopilotDevices.Count) Windows Autopilot Devices from Micr
 $autopilotUpdateDevicesCount = 0
 while ($autopilotUpdateDevicesCount -eq 0) {
     Write-Host
-    Write-Host ' Please Choose one of the Group Tag options below: ' -ForegroundColor Cyan
+    Write-Host ' Please Choose one of the Group Tag options below: ' -ForegroundColor Magenta
     Write-Host
     Write-Host ' (1) Update All Autopilot Devices Group Tags' -ForegroundColor Yellow
     Write-Host
@@ -443,9 +458,9 @@ while ($autopilotUpdateDevicesCount -eq 0) {
     Write-Host
     $choice = ''
     $autopilotUpdateDevices = @()
-    $choice = Read-Host -Prompt 'Please type 1, 2, 3, 4, 5, 6, 7, or E to exit the script, then press enter'
+    $choice = Read-Host -Prompt 'Please select an option from the provided list, then press enter'
     while ( $choice -notin @('1', '2', '3', '4', '5', '6', '7', 'E')) {
-        $choice = Read-Host -Prompt 'Please type 1, 2, 3, 4, 5, 6, 7, or E to exit the script, then press enter'
+        $choice = Read-Host -Prompt 'Please select an option from the provided list, then press enter'
     }
     if ($choice -eq 'E') {
         Exit
@@ -466,11 +481,18 @@ while ($autopilotUpdateDevicesCount -eq 0) {
         }
         #All AutoPilot Devices with Specific Group Tag
         $autopilotUpdateDevices = $autopilotDevices | Where-Object { $_.groupTag -eq $groupTagOld }
+
+        # GroupTag prompts
+        while ($autopilotGroupTags.count -eq 0) {
+            $autopilotGroupTags = @($autopilotDevices | Select-Object -Property groupTag -Unique | Out-GridView -PassThru -Title 'Select GroupTags of Autopilot Devices to Update')
+        }
+
+        $autopilotUpdateDevices = $autopilotDevices | Where-Object { $_.groupTag -in $autopilotGroupTags.groupTag }
     }
     if ($choice -eq '4') {
         # Manufacturer prompts
         while ($autopilotManufacturers.count -eq 0) {
-            $autopilotManufacturers = @($autopilotDevices | Select-Object -Property manufacturer -Unique | Out-GridView -PassThru -Title 'Select Manufacturer of Autopilot Device to Update')
+            $autopilotManufacturers = @($autopilotDevices | Select-Object -Property manufacturer -Unique | Out-GridView -PassThru -Title 'Select Manufacturer of Autopilot Devices to Update')
         }
 
         $autopilotUpdateDevices = $autopilotDevices | Where-Object { $_.manufacturer -in $autopilotManufacturers.manufacturer }
@@ -478,7 +500,7 @@ while ($autopilotUpdateDevicesCount -eq 0) {
     if ($choice -eq '5') {
         # Model prompts
         while ($autopilotModels.count -eq 0) {
-            $autopilotModels = @($autopilotDevices | Select-Object -Property model -Unique | Out-GridView -PassThru -Title 'Select Models of Autopilot Device to Update')
+            $autopilotModels = @($autopilotDevices | Select-Object -Property model -Unique | Out-GridView -PassThru -Title 'Select Models of Autopilot Devices to Update')
         }
 
         $autopilotUpdateDevices = $autopilotDevices | Where-Object { $_.model -in $autopilotModels.model }
@@ -489,9 +511,9 @@ while ($autopilotUpdateDevicesCount -eq 0) {
     }
     if ($choice -eq '7') {
         # Report
-        $autopilotDevices | Export-Csv -Path ".\AutopilotDevices.csv" -NoTypeInformation -Force
-        Write-Host "Exported Autopilot Devices to AutopilotDevices.csv" -ForegroundColor Green
-        Write-Warning -Message "Please update the Group Tags on devices in AutopilotDevices.csv before continuing" -WarningAction Inquire
+        $autopilotDevices | Export-Csv -Path '.\AutopilotDevices.csv' -NoTypeInformation -Force
+        Write-Host 'Exported All Autopilot Devices to AutopilotDevices.csv' -ForegroundColor Cyan
+        Write-Warning -Message 'Please update the Group Tags on devices in AutopilotDevices.csv before continuing' -WarningAction Inquire
         $autopilotImportDevices = Import-Csv -Path .\AutopilotDevices.csv
         foreach ($autopilotImportDevice in $autopilotImportDevices) {
             $apObject = $autopilotDevicesOptimised[$autopilotImportDevice.Id]
@@ -513,17 +535,26 @@ if ($choice -ne '7') {
     }
 }
 
-
 Write-Host "The following $autopilotUpdateDevicesCount Autopilot devices are in scope to be updated:" -ForegroundColor Yellow
-$autopilotUpdateDevices | Format-Table
+$autopilotUpdateDevices | Format-Table -Property displayName, serialNumber, manufacturer, model -AutoSize
 
 Write-Warning -Message "You are about to update the group tag for $autopilotUpdateDevicesCount Autopilot devices." -WarningAction Inquire
 
 foreach ($autopilotUpdateDevice in $autopilotUpdateDevices) {
-    $rndWait = Get-Random -Minimum 0 -Maximum 3
+    $rndWait = Get-Random -Minimum 0 -Maximum 2
+
+    if ($choice -eq '7') {
+        $groupTagNew = $($autopilotUpdateDevice.groupTag)
+    }
+
     Write-Host "Updating Autopilot Group Tag with Serial Number: $($autopilotUpdateDevice.serialNumber) to '$groupTagNew'." -ForegroundColor Cyan
     Start-Sleep -Seconds $rndWait
     Set-AutopilotDevice -id $autopilotUpdateDevice.id -groupTag $groupTagNew
     Write-Host "Updated Autopilot Group Tag with Serial Number: $($autopilotUpdateDevice.serialNumber) to '$groupTagNew'." -ForegroundColor Green
 }
+
+Write-Host "Successfully updated $autopilotUpdateDevicesCount Autopilot devices with the new group tag" -ForegroundColor Green
+Write-Host 'Disconnecting from Microsoft Graph...' -ForegroundColor Cyan
+Disconnect-MgGraph
+
 #endregion Script
