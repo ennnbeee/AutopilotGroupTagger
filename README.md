@@ -4,15 +4,15 @@ AutoPilotGroupTagger is a PowerShell based utility that allows for bulk update a
 
 ## ⚠ Public Preview Notice
 
-AutoPilotGroupTagger is currently in Public Preview, meaning that although the utility is functional, you may encounter issues or bugs with the script.
+AutoPilotGroupTagger is currently in Public Preview, meaning that although the it is functional, you may encounter issues or bugs with the script.
 
-To help fix or contribute to the success of this script, feedback or contributions are crucial for improving the script.
+To help fix or contribute to the script:
 
 - 📝 [Submit Feedback](https://github.com/ennnbeee/AutopilotGroupTagger/issues/new?labels=feedback)
 - 🐛 [Report Bugs](https://github.com/ennnbeee/AutopilotGroupTagger/issues/new?labels=bug)
 - 💡 [Request Features](https://github.com/ennnbeee/AutopilotGroupTagger/issues/new?labels=enhancement)
 
- Thank you for your support.
+Thank you for your support.
 
 ## 🗒 Prerequisites
 
@@ -61,53 +61,53 @@ Authentication using the App Registration looks something like the below:
 
 ![AutoPilotGroupTagger](img/AutopilotGroupTagger.gif)
 
-### Features
+### 🌟 Features
 
 Once authenticated select one of the options to start applying Group Tags to your Autopilot Devices:
 
-- 1️⃣ Update **All Windows Autopilot Devices** with a new Group Tag 💻🖥
-- 2️⃣ Update Windows Autopilot Devices with **an empty Group Tag** with a new Group Tag 💻❌
-- 3️⃣ Update Windows Autopilot Devices with **specific existing Group Tags** with a new Group Tag 💻🏷
-- 4️⃣ Update **specific manufacturers** of Windows Autopilot Devices with a new Group Tag 💻🏢
-- 5️⃣ Update **specific models** of Windows Autopilot Devices with a new Group Tag 💻🏠
-- 6️⃣ Update **specific interactively selected** Windows Autopilot Devices with a new Group Tag 💻❔
-- 7️⃣ Export Windows Autopilot Device data, and **selectively update** multiple devices with new Group Tags 💻📔
-- 8️⃣ Update Windows Autopilot Devices with **specific Purchase Order** with a new Group Tag 💻💰 **NEW**
-- 🔚 Exit the script before you cause yourself some problems 💻😅
+- 💻🖥 Update **All Windows Autopilot Devices** with a new Group Tag
+- 💻❌ Update Windows Autopilot Devices with **an empty Group Tag** with a new Group Tag
+- 💻🏷 Update Windows Autopilot Devices with **specific existing Group Tags** with a new Group Tag
+- 💻🏢 Update **specific manufacturers** of Windows Autopilot Devices with a new Group Tag
+- 💻🏠 Update **specific models** of Windows Autopilot Devices with a new Group Tag
+- 💻❔ Update **specific interactively selected** Windows Autopilot Devices with a new Group Tag
+- 💻📔 Export Windows Autopilot Device data, and **selectively update** multiple devices with new Group Tags
+- 💻💰 Update Windows Autopilot Devices with **specific Purchase Orders** with a new Group Tag  **NEW**
+- 💻😅 Exit the script before you cause yourself some problems
 
 ## 🎬 Demos
 
-### 1️⃣ Update All Windows Autopilot Devices with a new Group Tag
+### 1️⃣ Update All Windows Autopilot Devices
 
 ![AutoPilotGroupTagger](img/AutopilotGroupTagger-1.gif)
 
-### 2️⃣ Update Windows Autopilot Devices with an empty Group Tag with a new Group Tag
+### 2️⃣ Update Windows Autopilot Devices with an empty Group Tag
 
 ![AutoPilotGroupTagger](img/AutopilotGroupTagger-2.gif)
 
-### 3️⃣ Update Windows Autopilot Devices with specific existing Group Tags with a new Group Tag
+### 3️⃣ Update Windows Autopilot Devices with specific existing Group Tags
 
 ![AutoPilotGroupTagger](img/AutopilotGroupTagger-3.gif)
 
-### 4️⃣ Update specific manufacturers of Windows Autopilot Devices with a new Group Tag
+### 4️⃣ Update specific manufacturers of Windows Autopilot Devices
 
 ![AutoPilotGroupTagger](img/AutopilotGroupTagger-4.gif)
 
-### 5️⃣ Update specific models of Windows Autopilot Devices with a new Group Tag
+### 5️⃣ Update specific models of Windows Autopilot Devices
 
 ![AutoPilotGroupTagger](img/AutopilotGroupTagger-5.gif)
 
-### 6️⃣ Update specific interactively selected Windows Autopilot Devices with a new Group Tag
+### 6️⃣ Update specific interactively selected Windows Autopilot Devices
 
 ![AutoPilotGroupTagger](img/AutopilotGroupTagger-6.gif)
 
-### 7️⃣ Export Windows Autopilot Device data, and selectively update multiple devices with new Group Tags
+### 7️⃣ Export Windows Autopilot Device data, and selectively update multiple devices
 
 ![AutoPilotGroupTagger](img/AutopilotGroupTagger-7.gif)
 
-## 📜 License
+### 8️⃣ Update Windows Autopilot Devices with specific Purchase Orders
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+TBC
 
 ## 📞 Support
 
@@ -116,6 +116,10 @@ If you encounter any issues or have questions:
 1. Check the [Issues](https://github.com/ennnbeee/AutopilotGroupTagger/issues) page
 2. Open a new issue if needed
 
+## 📜 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
 ---
 
-Created by [Nick Benton](https://github.com/ennnbeee)
+Created by [Nick Benton](https://github.com/ennnbeee) of [odds+endpoints](https://www.oddsandendpoints.co.uk/)
