@@ -15,6 +15,7 @@ Date           : 2025-01-31
 Updates:
     - 2025-01-31: 0.1 Initial release
     - 2025-01-31: 0.2 Included functionality to update group tags based on Purchase order
+    - 2025-02-02: 0.3 Updated logic around Autopilot device selection
 
 
 .LINK
@@ -326,8 +327,8 @@ Write-Host '
 
 Write-Host 'Autopilot GroupTagger - Update Autopilot Device Group Tags in bulk.' -ForegroundColor Green
 Write-Host 'Nick Benton - oddsandendpoints.co.uk' -NoNewline;
-Write-Host ' | Version' -NoNewline; Write-Host ' 0.2 Public Preview' -ForegroundColor Yellow -NoNewline
-Write-Host ' | Last updated: ' -NoNewline; Write-Host '2025-01-31' -ForegroundColor Magenta
+Write-Host ' | Version' -NoNewline; Write-Host ' 0.3 Public Preview' -ForegroundColor Yellow -NoNewline
+Write-Host ' | Last updated: ' -NoNewline; Write-Host '2025-02-02' -ForegroundColor Magenta
 Write-Host ''
 Write-Host 'If you have any feedback, please open an issue at https://github.com/ennnbeee/AutopilotGroupTagger/issues' -ForegroundColor Cyan
 Write-Host ''
@@ -396,18 +397,18 @@ Start-Sleep -Seconds 2  # Delay to allow for Graph API to catch up
 Write-Host ''
 Write-Host 'Getting all Entra ID Windows computer objects...' -ForegroundColor Cyan
 $entraDevices = Get-EntraIDObject -object Device
-$entraDevicesOptimised = @{}
+$entraDevicesHash = @{}
 foreach ($entraDevice in $entraDevices) {
-    $entraDevicesOptimised[$entraDevice.deviceid] = $entraDevice
+    $entraDevicesHash[$entraDevice.deviceid] = $entraDevice
 }
 Write-Host "Found $($entraDevices.Count) Windows devices and associated IDs from Entra ID." -ForegroundColor Green
 
 Write-Host ''
 Write-Host 'Getting all Intune Windows devices...' -ForegroundColor Cyan
 $intuneDevices = Get-ManagedDevices
-$intuneDevicesOptimised = @{}
+$intuneDevicesHash = @{}
 foreach ($intuneDevice in $intuneDevices) {
-    $intuneDevicesOptimised[$intuneDevice.id] = $intuneDevice
+    $intuneDevicesHash[$intuneDevice.id] = $intuneDevice
 }
 Write-Host "Found $($intuneDevices.Count) Windows device objects and associated IDs from Microsoft Intune." -ForegroundColor Green
 Write-Host ''
@@ -417,9 +418,9 @@ $apDevices = Get-AutopilotDevices
 $autopilotDevices = @()
 foreach ($apDevice in $apDevices) {
     # Details of Entra ID device object
-    $entraObject = $entraDevicesOptimised[$apDevice.azureAdDeviceId]
+    $entraObject = $entraDevicesHash[$apDevice.azureAdDeviceId]
     # Details of Intune device object
-    #$intuneObject = $intuneDevicesOptimised[$apDevice.managedDeviceId]
+    #$intuneObject = $intuneDevicesHash[$apDevice.managedDeviceId]
 
     $autopilotDevices += [PSCustomObject]@{
         'displayName'      = $entraObject.displayName
@@ -434,16 +435,16 @@ foreach ($apDevice in $apDevices) {
         'Id'               = $apDevice.Id
     }
 }
-$autopilotDevicesOptimised = @{}
+$autopilotDevicesHash = @{}
 foreach ($autopilotDevice in $autopilotDevices) {
-    $autopilotDevicesOptimised[$autopilotDevice.id] = $autopilotDevice
+    $autopilotDevicesHash[$autopilotDevice.id] = $autopilotDevice
 }
 Write-Host "Found $($autopilotDevices.Count) Windows Autopilot Devices from Microsoft Intune." -ForegroundColor Green
 #endregion discovery
 
 #region Script
-$autopilotUpdateDevicesCount = 0
-while ($autopilotUpdateDevicesCount -eq 0) {
+while ($autopilotUpdateDevices.Count -eq 0) {
+
     Write-Host
     Write-Host 'Please Choose one of the Group Tag options below: ' -ForegroundColor Magenta
     Write-Host
@@ -485,7 +486,7 @@ while ($autopilotUpdateDevicesCount -eq 0) {
             Write-Host
             Write-Host 'No Autopilot Devices with Empty Group Tags found.' -ForegroundColor Yellow
             Write-Host
-            Write-Host 'Please select another option.' -ForegroundColor Cyan
+            Write-Host 'Please select another option.' -ForegroundColor Yellow
             Write-Host
             continue
         }
@@ -511,21 +512,26 @@ while ($autopilotUpdateDevicesCount -eq 0) {
         while ($autopilotModels.count -eq 0) {
             $autopilotModels = @($autopilotDevices | Select-Object -Property model -Unique | Out-GridView -PassThru -Title 'Select Models of Autopilot Devices to Update')
         }
+
         $autopilotUpdateDevices = $autopilotDevices | Where-Object { $_.model -in $autopilotModels.model }
     }
     if ($choice -eq '6') {
-        $autopilotUpdateDevices = @($autopilotDevices | Out-GridView -PassThru -Title 'Select Autopilot Devices to Update')
+        while ($autopilotUpdateDevices.count -eq 0) {
+            $autopilotUpdateDevices = @($autopilotDevices | Out-GridView -PassThru -Title 'Select Autopilot Devices to Update')
+        }
     }
     if ($choice -eq '7') {
         # Report
         $autopilotDevices | Export-Csv -Path '.\AutopilotDevices.csv' -NoTypeInformation -Force
-        Write-Host 'Exported All Autopilot Devices to AutopilotDevices.csv' -ForegroundColor Cyan
-        Write-Warning -Message 'Please update the Group Tags on devices in AutopilotDevices.csv before continuing' -WarningAction Inquire
-        $autopilotImportDevices = Import-Csv -Path .\AutopilotDevices.csv
-        foreach ($autopilotImportDevice in $autopilotImportDevices) {
-            $apObject = $autopilotDevicesOptimised[$autopilotImportDevice.Id]
-            if ($autopilotImportDevice.groupTag -ne $apObject.groupTag) {
-                $autopilotUpdateDevices += $autopilotImportDevice
+        while ($autopilotUpdateDevices.count -eq 0) {
+            Write-Host 'Exported All Autopilot Devices to AutopilotDevices.csv' -ForegroundColor Cyan
+            Write-Warning -Message 'Please update the Group Tags on devices in AutopilotDevices.csv before continuing' -WarningAction Inquire
+            $autopilotImportDevices = Import-Csv -Path .\AutopilotDevices.csv
+            foreach ($autopilotImportDevice in $autopilotImportDevices) {
+                $apObject = $autopilotDevicesHash[$autopilotImportDevice.Id]
+                if ($autopilotImportDevice.groupTag -ne $apObject.groupTag) {
+                    $autopilotUpdateDevices += $autopilotImportDevice
+                }
             }
         }
     }
@@ -536,9 +542,6 @@ while ($autopilotUpdateDevicesCount -eq 0) {
         }
         $autopilotUpdateDevices = $autopilotDevices | Where-Object { $_.purchaseOrder -in $autopilotPOs.purchaseOrder }
     }
-
-    $autopilotUpdateDevicesCount = $autopilotUpdateDevices.Count
-    Write-Host "You have selected $autopilotUpdateDevicesCount Autopilot devices to update." -ForegroundColor Green
 }
 
 if ($choice -ne '7') {
@@ -566,5 +569,5 @@ foreach ($autopilotUpdateDevice in $autopilotUpdateDevices) {
     Write-Host "Updated Autopilot Group Tag with Serial Number: $($autopilotUpdateDevice.serialNumber) to '$groupTagNew'." -ForegroundColor Green
 }
 
-Write-Host "Successfully updated $autopilotUpdateDevicesCount Autopilot devices with the new group tag" -ForegroundColor Green
+Write-Host "Successfully updated $($autopilotUpdateDevices.Count) Autopilot devices with the new group tag" -ForegroundColor Green
 #endregion Script
