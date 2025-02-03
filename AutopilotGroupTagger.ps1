@@ -13,16 +13,16 @@ Prerequisite   : PowerShell 7, Microsoft Graph PowerShell SDK
 Version        : 0.2 Preview
 Date           : 2025-01-31
 Updates:
-    - 2025-01-31: 0.1 Initial release
-    - 2025-01-31: 0.2 Included functionality to update group tags based on Purchase order
+    - 2025-02-03: 0.4 Configured to run on PowerShell 5
     - 2025-02-02: 0.3 Updated logic around Autopilot device selection
-
+    - 2025-01-31: 0.2 Included functionality to update group tags based on Purchase order
+    - 2025-01-31: 0.1 Initial release
 
 .LINK
 https://github.com/ennnbeee/AutopilotGroupTagger
 
 .PARAMETER tenantId
-Provide the Id of the tenant to connect to.
+Provide the Id of the Entra ID tenant to connect to.
 
 .PARAMETER appId
 Provide the Id of the Entra App registration to be used for authentication.
@@ -84,6 +84,7 @@ Specifies the user scopes for interactive authentication.
 Connect-ToGraph -tenantId $tenantId -appId $app -appSecret $secret
 
 -#>
+
     [cmdletbinding()]
     param
     (
@@ -315,22 +316,26 @@ Function Get-ManagedDevices() {
 }
 #endregion Functions
 
-$tenantId = '437e8ffb-3030-469a-99da-e5b527908010'
-
 #region intro
 Write-Host '
-▄▀█ █░█ ▀█▀ █▀█ █▀█ █ █░░ █▀█ ▀█▀
-█▀█ █▄█ ░█░ █▄█ █▀▀ █ █▄▄ █▄█ ░█░
+ _______         __                __ __         __
+|   _   |.--.--.|  |_.-----.-----.|__|  |.-----.|  |_
+|       ||  |  ||   _|  _  |  _  ||  |  ||  _  ||   _|
+|___|___||_____||____|_____|   __||__|__||_____||____|
+                           |__|
 ' -ForegroundColor Cyan
 Write-Host '
-█▀▀ █▀█ █▀█ █░█ █▀█ ▀█▀ ▄▀█ █▀▀ █▀▀ █▀▀ █▀█
-█▄█ █▀▄ █▄█ █▄█ █▀▀ ░█░ █▀█ █▄█ █▄█ ██▄ █▀▄
+ _______                          _______
+|     __|.----.-----.--.--.-----.|_     _|.---.-.-----.-----.-----.----.
+|    |  ||   _|  _  |  |  |  _  |  |   |  |  _  |  _  |  _  |  -__|   _|
+|_______||__| |_____|_____|   __|  |___|  |___._|___  |___  |_____|__|
+                          |__|                  |_____|_____|
 ' -ForegroundColor Red
 
 Write-Host 'Autopilot GroupTagger - Update Autopilot Device Group Tags in bulk.' -ForegroundColor Green
 Write-Host 'Nick Benton - oddsandendpoints.co.uk' -NoNewline;
-Write-Host ' | Version' -NoNewline; Write-Host ' 0.3 Public Preview' -ForegroundColor Yellow -NoNewline
-Write-Host ' | Last updated: ' -NoNewline; Write-Host '2025-02-02' -ForegroundColor Magenta
+Write-Host ' | Version' -NoNewline; Write-Host ' 0.4 Public Preview' -ForegroundColor Yellow -NoNewline
+Write-Host ' | Last updated: ' -NoNewline; Write-Host '2025-02-03' -ForegroundColor Magenta
 Write-Host ''
 Write-Host 'If you have any feedback, please open an issue at https://github.com/ennnbeee/AutopilotGroupTagger/issues' -ForegroundColor Cyan
 Write-Host ''
@@ -518,11 +523,18 @@ while ($autopilotUpdateDevices.Count -eq 0) {
         $autopilotUpdateDevices = $autopilotDevices | Where-Object { $_.model -in $autopilotModels.model }
     }
     if ($choice -eq '6') {
+        # Purchase Order prompts
+        while ($autopilotPOs.count -eq 0) {
+            $autopilotPOs = @($autopilotDevices | Select-Object -Property purchaseOrder -Unique | Out-GridView -PassThru -Title 'Select Purchase Order of Autopilot Devices to Update')
+        }
+        $autopilotUpdateDevices = $autopilotDevices | Where-Object { $_.purchaseOrder -in $autopilotPOs.purchaseOrder }
+    }
+    if ($choice -eq '7') {
         while ($autopilotUpdateDevices.count -eq 0) {
             $autopilotUpdateDevices = @($autopilotDevices | Out-GridView -PassThru -Title 'Select Autopilot Devices to Update')
         }
     }
-    if ($choice -eq '7') {
+    if ($choice -eq '8') {
         # Report
         $autopilotDevices | Export-Csv -Path '.\AutopilotDevices.csv' -NoTypeInformation -Force
         while ($autopilotUpdateDevices.count -eq 0) {
@@ -537,16 +549,9 @@ while ($autopilotUpdateDevices.Count -eq 0) {
             }
         }
     }
-    if ($choice -eq '8') {
-        # Purchase Order prompts
-        while ($autopilotPOs.count -eq 0) {
-            $autopilotPOs = @($autopilotDevices | Select-Object -Property purchaseOrder -Unique | Out-GridView -PassThru -Title 'Select Purchase Order of Autopilot Devices to Update')
-        }
-        $autopilotUpdateDevices = $autopilotDevices | Where-Object { $_.purchaseOrder -in $autopilotPOs.purchaseOrder }
-    }
 }
 
-if ($choice -ne '7') {
+if ($choice -ne '8') {
     [string]$groupTagNew = Read-Host "Please enter the NEW group tag you wish to apply to the $($autopilotUpdateDevices.Count) Autopilot devices"
     while ($groupTagNew -eq '' -or $null -eq $groupTagNew) {
         [string]$groupTagNew = Read-Host "Please enter the NEW group tag you wish to apply to the $($autopilotUpdateDevices.Count) Autopilot devices"
@@ -561,7 +566,7 @@ Write-Warning -Message "You are about to update the group tag for $($autopilotUp
 foreach ($autopilotUpdateDevice in $autopilotUpdateDevices) {
     $rndWait = Get-Random -Minimum 0 -Maximum 2
 
-    if ($choice -eq '7') {
+    if ($choice -eq '8') {
         $groupTagNew = $($autopilotUpdateDevice.groupTag)
     }
 

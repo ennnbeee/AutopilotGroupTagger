@@ -4,22 +4,21 @@ AutoPilotGroupTagger is a PowerShell based utility that allows for bulk update a
 
 ## ⚠ Public Preview Notice
 
-AutoPilotGroupTagger is currently in Public Preview, meaning that although the it is functional, you may encounter issues or bugs with the script.
-
-To help fix or contribute to the script:
-
-- 📝 [Submit Feedback](https://github.com/ennnbeee/AutopilotGroupTagger/issues/new?labels=feedback)
-- 🐛 [Report Bugs](https://github.com/ennnbeee/AutopilotGroupTagger/issues/new?labels=bug)
-- 💡 [Request Features](https://github.com/ennnbeee/AutopilotGroupTagger/issues/new?labels=enhancement)
-
-Thank you for your support.
+AutopilotGroupTagger is currently in Public Preview, meaning that although the it is functional, you may encounter issues or bugs with the script.
 
 ## 🗒 Prerequisites
 
-- Tested on PowerShell 7.0 or higher
+- Tested on PowerShell 5 and PowerShell 7
 - Microsoft.Graph.Authentication Module should be installed, the script will detect and install if required.
 - Entra ID App Registration with appropriate Graph Scopes or using Interactive Sign-In with a privileged account
 - Windows Operating System
+
+## 🔄 Updates
+
+- v0.4: Now supports PowerShell 5
+- v0.3: Improved logic around Autopilot device selection options
+- v0.2: Included functionality to update group tags based on Purchase order
+- v0.1: Initial release
 
 ## ⏯ Usage
 
@@ -57,9 +56,9 @@ Then run the script with the corresponding Entra ID Tenant ID, AppId and AppSecr
 
 ### 🔐 Authentication
 
-Authentication using the App Registration looks something like the below:
+Authentication using the Tenant ID looks like the below:
 
-![AutoPilotGroupTagger](img/AutopilotGroupTagger.gif)
+![AutoPilotGroupTagger](img/agt-demo-auth-tenant.gif)
 
 ### 🌟 Features
 
@@ -70,51 +69,57 @@ Once authenticated select one of the options to start applying Group Tags to you
 - 💻🏷 Update Windows Autopilot Devices with **specific existing Group Tags** with a new Group Tag
 - 💻🏢 Update **specific manufacturers** of Windows Autopilot Devices with a new Group Tag
 - 💻🏠 Update **specific models** of Windows Autopilot Devices with a new Group Tag
+- 💻💰 Update Windows Autopilot Devices with **specific Purchase Orders** with a new Group Tag
 - 💻❔ Update **specific interactively selected** Windows Autopilot Devices with a new Group Tag
 - 💻📔 Export Windows Autopilot Device data, and **selectively update** multiple devices with new Group Tags
-- 💻💰 Update Windows Autopilot Devices with **specific Purchase Orders** with a new Group Tag  **NEW**
 - 💻😅 Exit the script before you cause yourself some problems
 
 ## 🎬 Demos
 
 ### 1️⃣ Update All Windows Autopilot Devices
 
-![AutoPilotGroupTagger](img/AutopilotGroupTagger-1.gif)
+![AutoPilotGroupTagger](img/agt-demo-alldevices.gif)
 
 ### 2️⃣ Update Windows Autopilot Devices with an empty Group Tag
 
-![AutoPilotGroupTagger](img/AutopilotGroupTagger-2.gif)
+![AutoPilotGroupTagger](img/agt-demo-allempty.gif)
 
 ### 3️⃣ Update Windows Autopilot Devices with specific existing Group Tags
 
-![AutoPilotGroupTagger](img/AutopilotGroupTagger-3.gif)
+![AutoPilotGroupTagger](img/agt-demo-tags.gif)
 
 ### 4️⃣ Update specific manufacturers of Windows Autopilot Devices
 
-![AutoPilotGroupTagger](img/AutopilotGroupTagger-4.gif)
+![AutoPilotGroupTagger](img/agt-demo-makes.gif)
 
 ### 5️⃣ Update specific models of Windows Autopilot Devices
 
-![AutoPilotGroupTagger](img/AutopilotGroupTagger-5.gif)
+![AutoPilotGroupTagger](img/agt-demo-models.gif)
 
-### 6️⃣ Update specific interactively selected Windows Autopilot Devices
+### 6️⃣ Update Windows Autopilot Devices with specific Purchase Orders
 
-![AutoPilotGroupTagger](img/AutopilotGroupTagger-6.gif)
+Demo Coming Soon
 
-### 7️⃣ Export Windows Autopilot Device data, and selectively update multiple devices
+### 7️⃣ Update specific interactively selected Windows Autopilot Devices
 
-![AutoPilotGroupTagger](img/AutopilotGroupTagger-7.gif)
+![AutoPilotGroupTagger](img/agt-demo-specific.gif)
 
-### 8️⃣ Update Windows Autopilot Devices with specific Purchase Orders
+### 8️⃣ Export Windows Autopilot Device data, and selectively update multiple devices
 
-TBC
+![AutoPilotGroupTagger](img/agt-demo-report.gif)
 
-## 📞 Support
+## 🚑 Support
 
 If you encounter any issues or have questions:
 
 1. Check the [Issues](https://github.com/ennnbeee/AutopilotGroupTagger/issues) page
 2. Open a new issue if needed
+
+- 📝 [Submit Feedback](https://github.com/ennnbeee/AutopilotGroupTagger/issues/new?labels=feedback)
+- 🐛 [Report Bugs](https://github.com/ennnbeee/AutopilotGroupTagger/issues/new?labels=bug)
+- 💡 [Request Features](https://github.com/ennnbeee/AutopilotGroupTagger/issues/new?labels=enhancement)
+
+Thank you for your support.
 
 ## 📜 License
 
