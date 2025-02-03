@@ -94,7 +94,7 @@ Connect-ToGraph -tenantId $tenantId -appId $app -appSecret $secret
     )
 
     Process {
-        #Import-Module Microsoft.Graph.Authentication
+        Import-Module Microsoft.Graph.Authentication
         $version = (Get-Module microsoft.graph.authentication | Select-Object -ExpandProperty Version).major
 
         if ($AppId -ne '') {
@@ -315,6 +315,8 @@ Function Get-ManagedDevices() {
 }
 #endregion Functions
 
+$tenantId = '437e8ffb-3030-469a-99da-e5b527908010'
+
 #region intro
 Write-Host '
 ▄▀█ █░█ ▀█▀ █▀█ █▀█ █ █░░ █▀█ ▀█▀
@@ -404,7 +406,7 @@ foreach ($entraDevice in $entraDevices) {
 Write-Host "Found $($entraDevices.Count) Windows devices and associated IDs from Entra ID." -ForegroundColor Green
 
 Write-Host ''
-Write-Host 'Getting all Intune Windows devices...' -ForegroundColor Cyan
+Write-Host 'Getting all Windows Intune devices...' -ForegroundColor Cyan
 $intuneDevices = Get-ManagedDevices
 $intuneDevicesHash = @{}
 foreach ($intuneDevice in $intuneDevices) {
@@ -545,16 +547,16 @@ while ($autopilotUpdateDevices.Count -eq 0) {
 }
 
 if ($choice -ne '7') {
-    [string]$groupTagNew = Read-Host "Please enter the NEW group tag you wish to apply to the $autopilotUpdateDevicesCount Autopilot devices"
+    [string]$groupTagNew = Read-Host "Please enter the NEW group tag you wish to apply to the $($autopilotUpdateDevices.Count) Autopilot devices"
     while ($groupTagNew -eq '' -or $null -eq $groupTagNew) {
-        [string]$groupTagNew = Read-Host "Please enter the NEW group tag you wish to apply to the $autopilotUpdateDevicesCount Autopilot devices"
+        [string]$groupTagNew = Read-Host "Please enter the NEW group tag you wish to apply to the $($autopilotUpdateDevices.Count) Autopilot devices"
     }
 }
 
-Write-Host "The following $autopilotUpdateDevicesCount Autopilot devices are in scope to be updated:" -ForegroundColor Yellow
-$autopilotUpdateDevices | Format-Table -Property displayName, serialNumber, manufacturer, model -AutoSize
+Write-Host "The following $($autopilotUpdateDevices.Count) Autopilot devices are in scope to be updated:" -ForegroundColor Yellow
+$autopilotUpdateDevices | Format-Table -Property displayName, serialNumber, manufacturer, model, purchaseOrder -AutoSize
 
-Write-Warning -Message "You are about to update the group tag for $autopilotUpdateDevicesCount Autopilot devices." -WarningAction Inquire
+Write-Warning -Message "You are about to update the group tag for $($autopilotUpdateDevices.Count) Autopilot devices." -WarningAction Inquire
 
 foreach ($autopilotUpdateDevice in $autopilotUpdateDevices) {
     $rndWait = Get-Random -Minimum 0 -Maximum 2
