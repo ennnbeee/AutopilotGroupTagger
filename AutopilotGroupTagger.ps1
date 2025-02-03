@@ -1,25 +1,33 @@
-<#
-.SYNOPSIS
-Autopilot GroupTagger - Update Autopilot Device Group Tags in bulk.
+<#PSScriptInfo
 
+.VERSION 0.4
+.GUID 63c8809e-5c8a-4ddc-82a4-29706992802f
+.AUTHOR Nick Benton
+.COMPANYNAME
+.COPYRIGHT GPL
+.TAGS
+.LICENSEURI https://github.com/ennnbeee/AutopilotGroupTagger/blob/main/LICENSE
+.PROJECTURI https://github.com/ennnbeee/AutopilotGroupTagger
+.ICONURI
+.EXTERNALMODULEDEPENDENCIES
+.REQUIREDSCRIPTS
+.EXTERNALSCRIPTDEPENDENCIES
+.RELEASENOTES
+Version 0.4: Configured to run on PowerShell 5
+Version 0.3: Updated logic around Autopilot device selection
+Version 0.2: Included functionality to update group tags based on Purchase order
+Version 0.1: Initial release
+.PRIVATEDATA
+#>
+
+<#
 .DESCRIPTION
 The Autopilot GroupTagger script is designed to allow for bulk updating of Autopilot device group tags in Microsoft Intune.
 The script will connect to the Microsoft Graph API and retrieve all Autopilot devices, then allow for bulk updating of group tags based on various criteria.
-
-.NOTES
-File Name      : AutopilotGroupTagger.ps1
-Author         : Nick Benton
-Prerequisite   : PowerShell 7, Microsoft Graph PowerShell SDK
-Version        : 0.4 Preview
-Date           : 2025-02-03
-Updates:
-    - 2025-02-03: 0.4 Configured to run on PowerShell 5
-    - 2025-02-02: 0.3 Updated logic around Autopilot device selection
-    - 2025-01-31: 0.2 Included functionality to update group tags based on Purchase order
-    - 2025-01-31: 0.1 Initial release
-
-.LINK
-https://github.com/ennnbeee/AutopilotGroupTagger
+#>
+<#
+.SYNOPSIS
+Autopilot GroupTagger - Update Autopilot Device Group Tags in bulk.
 
 .PARAMETER tenantId
 Provide the Id of the Entra ID tenant to connect to.
@@ -32,15 +40,15 @@ Provide the App secret to allow for authentication to graph
 
 .EXAMPLE
 Interactive Authentication
-PS> .\AutopilotGroupTagger.ps1
+.\AutopilotGroupTagger.ps1
 
 .EXAMPLE
 Pass through Authentication
-PS> .\AutopilotGroupTagger.ps1 -tenantId '437e8ffb-3030-469a-99da-e5b527908099'
+.\AutopilotGroupTagger.ps1 -tenantId '437e8ffb-3030-469a-99da-e5b527908099'
 
 .EXAMPLE
 App Authentication
-PS> .\AutopilotGroupTagger.ps1 -tenantId '437e8ffb-3030-469a-99da-e5b527908099' -appId '799ebcfa-ca81-4e72-baaf-a35126464d67' -appSecret 'g708Q~uof4xo9dU_1EjGQIuUr0UyBHNZmY2mcdy6'
+.\AutopilotGroupTagger.ps1 -tenantId '437e8ffb-3030-469a-99da-e5b527908099' -appId '799ebcfa-ca81-4e72-baaf-a35126464d67' -appSecret 'g708Q~uof4xo9dU_1EjGQIuUr0UyBHNZmY2mcdy6'
 
 #>
 
