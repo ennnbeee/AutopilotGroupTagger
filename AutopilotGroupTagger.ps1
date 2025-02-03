@@ -11,7 +11,7 @@ File Name      : AutopilotGroupTagger.ps1
 Author         : Nick Benton
 Prerequisite   : PowerShell 7, Microsoft Graph PowerShell SDK
 Version        : 0.4 Preview
-Date           : 2025-01-31
+Date           : 2025-02-03
 Updates:
     - 2025-02-03: 0.4 Configured to run on PowerShell 5
     - 2025-02-02: 0.3 Updated logic around Autopilot device selection
