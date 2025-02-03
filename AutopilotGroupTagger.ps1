@@ -21,13 +21,12 @@ Version 0.1: Initial release
 #>
 
 <#
+.SYNOPSIS
+Autopilot GroupTagger - Update Autopilot Device Group Tags in bulk.
+
 .DESCRIPTION
 The Autopilot GroupTagger script is designed to allow for bulk updating of Autopilot device group tags in Microsoft Intune.
 The script will connect to the Microsoft Graph API and retrieve all Autopilot devices, then allow for bulk updating of group tags based on various criteria.
-#>
-<#
-.SYNOPSIS
-Autopilot GroupTagger - Update Autopilot Device Group Tags in bulk.
 
 .PARAMETER tenantId
 Provide the Id of the Entra ID tenant to connect to.
