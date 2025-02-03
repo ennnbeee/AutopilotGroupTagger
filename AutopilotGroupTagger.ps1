@@ -10,7 +10,7 @@ The script will connect to the Microsoft Graph API and retrieve all Autopilot de
 File Name      : AutopilotGroupTagger.ps1
 Author         : Nick Benton
 Prerequisite   : PowerShell 7, Microsoft Graph PowerShell SDK
-Version        : 0.2 Preview
+Version        : 0.4 Preview
 Date           : 2025-01-31
 Updates:
     - 2025-02-03: 0.4 Configured to run on PowerShell 5
