@@ -6,19 +6,44 @@ AutoPilotGroupTagger is a PowerShell based utility that allows for bulk update a
 
 AutopilotGroupTagger is currently in Public Preview, meaning that although the it is functional, you may encounter issues or bugs with the script.
 
+> [!TIP]
+> If you do encounter issue or bugs, or want to contribute, submit feedback, or suggestions, please create and an issue.
+
+## 🌟 Features
+
+Once authenticated select one of the options to start applying Group Tags to your Autopilot Devices:
+
+- 🖥 Update **All Windows Autopilot Devices** with a new Group Tag
+- ❌ Update Windows Autopilot Devices with **an empty Group Tag** with a new Group Tag
+- 🏷 Update Windows Autopilot Devices with **specific existing Group Tags** with a new Group Tag
+- 🏢 Update **specific manufacturers** of Windows Autopilot Devices with a new Group Tag
+- 🏠 Update **specific models** of Windows Autopilot Devices with a new Group Tag
+- 💰 Update Windows Autopilot Devices with **specific Purchase Orders** with a new Group Tag
+- ❔ Update **specific interactively selected** Windows Autopilot Devices with a new Group Tag
+- 📔 Export Windows Autopilot Device data, and **selectively update** multiple devices with new Group Tags
+- 😅 Exit the script before you cause yourself some problems
+
+> [!NOTE]
+> Before the Group Tags are assigned, you are prompted whether you want to continue.
+
 ## 🗒 Prerequisites
 
-- Tested on PowerShell 5 and PowerShell 7
-- Microsoft.Graph.Authentication Module should be installed, the script will detect and install if required.
-- Entra ID App Registration with appropriate Graph Scopes or using Interactive Sign-In with a privileged account
-- Windows Operating System
+> [!IMPORTANT]  
+> - Tested on PowerShell 5 and PowerShell 7
+> - Microsoft.Graph.Authentication Module should be installed, the script will detect and install if required.
+> - Entra ID App Registration with appropriate Graph Scopes or using Interactive Sign-In with a privileged account
+> - Windows Operating System
 
 ## 🔄 Updates
 
-- v0.4: Now supports PowerShell 5
-- v0.3: Improved logic around Autopilot device selection options
-- v0.2: Included functionality to update group tags based on Purchase order
-- v0.1: Initial release
+- **v0.4**
+  - Now supports PowerShell 5
+- v0.3
+  - Improved logic around Autopilot device selection options
+- v0.2
+  - Included functionality to update group tags based on Purchase order
+- v0.1
+  - Initial release
 
 ## ⏯ Usage
 
@@ -38,6 +63,8 @@ Run the script with the your Entra ID Tenant ID passed to the `tenantID` paramet
 .\AutopilotGroupTagger.ps1 -tenantID '437e8ffb-3030-469a-99da-e5b527908099'
 ```
 
+![AutoPilotGroupTagger Authentication using tenantID](img/agt-demo-auth-tenant.gif)
+
 OR
 
 Create an Entra ID App Registration with the following Graph API Application permissions:
@@ -53,27 +80,6 @@ Then run the script with the corresponding Entra ID Tenant ID, AppId and AppSecr
 ```powershell
 .\AutopilotGroupTagger.ps1 -tenantID '437e8ffb-3030-469a-99da-e5b527908099' -appId '799ebcfa-ca81-4e63-baaf-a35123164d78' -appSecret 'g708Q~uot4xo9dU_1TjGQIuUr0UyBHNZmY2mdcy6'
 ```
-
-### 🔐 Authentication
-
-Authentication using the Tenant ID looks like the below:
-
-![AutoPilotGroupTagger](img/agt-demo-auth-tenant.gif)
-
-### 🌟 Features
-
-Once authenticated select one of the options to start applying Group Tags to your Autopilot Devices:
-
-- 💻🖥 Update **All Windows Autopilot Devices** with a new Group Tag
-- 💻❌ Update Windows Autopilot Devices with **an empty Group Tag** with a new Group Tag
-- 💻🏷 Update Windows Autopilot Devices with **specific existing Group Tags** with a new Group Tag
-- 💻🏢 Update **specific manufacturers** of Windows Autopilot Devices with a new Group Tag
-- 💻🏠 Update **specific models** of Windows Autopilot Devices with a new Group Tag
-- 💻💰 Update Windows Autopilot Devices with **specific Purchase Orders** with a new Group Tag
-- 💻❔ Update **specific interactively selected** Windows Autopilot Devices with a new Group Tag
-- 💻📔 Export Windows Autopilot Device data, and **selectively update** multiple devices with new Group Tags
-- 💻😅 Exit the script before you cause yourself some problems
-
 ## 🎬 Demos
 
 ### 1️⃣ Update All Windows Autopilot Devices
