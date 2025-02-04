@@ -1,6 +1,6 @@
 <#PSScriptInfo
 
-.VERSION 0.4
+.VERSION 0.4.1
 .GUID 63c8809e-5c8a-4ddc-82a4-29706992802f
 .AUTHOR Nick Benton
 .COMPANYNAME
@@ -13,6 +13,7 @@
 .REQUIREDSCRIPTS
 .EXTERNALSCRIPTDEPENDENCIES
 .RELEASENOTES
+Version 0.4.1: Updated authentication and module detection
 Version 0.4: Configured to run on PowerShell 5
 Version 0.3: Updated logic around Autopilot device selection
 Version 0.2: Included functionality to update group tags based on Purchase order
@@ -341,8 +342,8 @@ Write-Host '
 
 Write-Host 'Autopilot GroupTagger - Update Autopilot Device Group Tags in bulk.' -ForegroundColor Green
 Write-Host 'Nick Benton - oddsandendpoints.co.uk' -NoNewline;
-Write-Host ' | Version' -NoNewline; Write-Host ' 0.4 Public Preview' -ForegroundColor Yellow -NoNewline
-Write-Host ' | Last updated: ' -NoNewline; Write-Host '2025-02-03' -ForegroundColor Magenta
+Write-Host ' | Version' -NoNewline; Write-Host ' 0.4.1 Public Preview' -ForegroundColor Yellow -NoNewline
+Write-Host ' | Last updated: ' -NoNewline; Write-Host '2025-02-04' -ForegroundColor Magenta
 Write-Host ''
 Write-Host 'If you have any feedback, please open an issue at https://github.com/ennnbeee/AutopilotGroupTagger/issues' -ForegroundColor Cyan
 Write-Host ''
@@ -357,7 +358,7 @@ $requiredScopes = @('Device.Read.All', 'DeviceManagementServiceConfig.ReadWrite.
 $graphModule = 'Microsoft.Graph.Authentication'
 Write-Host "Checking for $graphModule PowerShell module..." -ForegroundColor Cyan
 
-If (!(Find-Module -Name $graphModule)) {
+If (!(Get-Module -Name $graphModule -ListAvailable)) {
     Install-Module -Name $graphModule -Scope CurrentUser -AllowClobber
 }
 Write-Host "PowerShell Module $graphModule found." -ForegroundColor Green
@@ -559,16 +560,17 @@ while ($autopilotUpdateDevices.Count -eq 0) {
 }
 
 if ($choice -ne '8') {
+    Write-Host ''
     [string]$groupTagNew = Read-Host "Please enter the NEW group tag you wish to apply to the $($autopilotUpdateDevices.Count) Autopilot devices"
     while ($groupTagNew -eq '' -or $null -eq $groupTagNew) {
         [string]$groupTagNew = Read-Host "Please enter the NEW group tag you wish to apply to the $($autopilotUpdateDevices.Count) Autopilot devices"
     }
 }
-
+Write-Host ''
 Write-Host "The following $($autopilotUpdateDevices.Count) Autopilot devices are in scope to be updated:" -ForegroundColor Yellow
 $autopilotUpdateDevices | Format-Table -Property displayName, serialNumber, manufacturer, model, purchaseOrder -AutoSize
 
-Write-Warning -Message "You are about to update the group tag for $($autopilotUpdateDevices.Count) Autopilot devices." -WarningAction Inquire
+Write-Warning -Message "You are about to update the group tag(s) for $($autopilotUpdateDevices.Count) Autopilot devices." -WarningAction Inquire
 
 foreach ($autopilotUpdateDevice in $autopilotUpdateDevices) {
     $rndWait = Get-Random -Minimum 0 -Maximum 2
@@ -582,6 +584,6 @@ foreach ($autopilotUpdateDevice in $autopilotUpdateDevices) {
     Set-AutopilotDevice -id $autopilotUpdateDevice.id -groupTag $groupTagNew
     Write-Host "Updated Autopilot Group Tag with Serial Number: $($autopilotUpdateDevice.serialNumber) to '$groupTagNew'." -ForegroundColor Green
 }
-
-Write-Host "Successfully updated $($autopilotUpdateDevices.Count) Autopilot devices with the new group tag" -ForegroundColor Green
+Write-Host ''
+Write-Host "Successfully updated $($autopilotUpdateDevices.Count) Autopilot devices with the new group tag(s)" -ForegroundColor Green
 #endregion Script

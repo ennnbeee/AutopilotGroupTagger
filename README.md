@@ -28,7 +28,8 @@ Once authenticated select one of the options to start applying Group Tags to you
 
 ## 🗒 Prerequisites
 
-> [!IMPORTANT]  
+> [!IMPORTANT]
+>
 > - Tested on PowerShell 5 and PowerShell 7
 > - Microsoft.Graph.Authentication Module should be installed, the script will detect and install if required.
 > - Entra ID App Registration with appropriate Graph Scopes or using Interactive Sign-In with a privileged account
@@ -36,7 +37,9 @@ Once authenticated select one of the options to start applying Group Tags to you
 
 ## 🔄 Updates
 
-- **v0.4**
+- v0.4.1
+  - Updated Graph Module detection method
+- v0.4
   - Now supports PowerShell 5
 - v0.3
   - Improved logic around Autopilot device selection options
@@ -80,6 +83,7 @@ Then run the script with the corresponding Entra ID Tenant ID, AppId and AppSecr
 ```powershell
 .\AutopilotGroupTagger.ps1 -tenantID '437e8ffb-3030-469a-99da-e5b527908099' -appId '799ebcfa-ca81-4e63-baaf-a35123164d78' -appSecret 'g708Q~uot4xo9dU_1TjGQIuUr0UyBHNZmY2mdcy6'
 ```
+
 ## 🎬 Demos
 
 ### 1️⃣ Update All Windows Autopilot Devices
