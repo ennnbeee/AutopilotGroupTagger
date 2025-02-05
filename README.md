@@ -37,6 +37,8 @@ Once authenticated select one of the options to start applying Group Tags to you
 
 ## 🔄 Updates
 
+- **v0.4.2**
+  - Improvements to functions and bug fixes
 - v0.4.1
   - Updated Graph Module detection method
 - v0.4

@@ -1,6 +1,6 @@
 <#PSScriptInfo
 
-.VERSION 0.4.1
+.VERSION 0.4.2
 .GUID 63c8809e-5c8a-4ddc-82a4-29706992802f
 .AUTHOR Nick Benton
 .COMPANYNAME
@@ -13,6 +13,7 @@
 .REQUIREDSCRIPTS
 .EXTERNALSCRIPTDEPENDENCIES
 .RELEASENOTES
+Version 0.4.2: Bug fixes and improvements
 Version 0.4.1: Updated authentication and module detection
 Version 0.4: Configured to run on PowerShell 5
 Version 0.3: Updated logic around Autopilot device selection
@@ -52,17 +53,20 @@ App Authentication
 
 #>
 
-[CmdletBinding()]
+[CmdletBinding(DefaultParameterSetName = 'Default')]
 
 param(
 
-    [Parameter(Mandatory = $false)]
+    [Parameter(Mandatory = $false, HelpMessage = 'Provide the Id of the Entra ID tenant to connect to')]
+    [ValidateLength(36, 36)]
     [String]$tenantId,
 
-    [Parameter(Mandatory = $false)]
+    [Parameter(Mandatory = $false, ParameterSetName = 'appAuth', HelpMessage = 'Provide the Id of the Entra App registration to be used for authentication')]
+    [ValidateLength(36, 36)]
     [String]$appId,
 
-    [Parameter(Mandatory = $false)]
+    [Parameter(Mandatory = $true, ParameterSetName = 'appAuth', HelpMessage = 'Provide the App secret to allow for authentication to graph')]
+    [ValidateNotNullOrEmpty()]
     [String]$appSecret
 
 )
@@ -178,16 +182,11 @@ Function Get-AutopilotDevices() {
             $results += $additional.value
         }
         $results
-
     }
-
     catch {
-
-        Write-Error $Error[0].ErrorDetails.Message
+        Write-Error $_.Exception.Message
         break
-
     }
-
 }
 Function Set-AutopilotDevice() {
 
@@ -205,7 +204,10 @@ Function Set-AutopilotDevice() {
 
     [CmdletBinding()]
     param(
+        [Parameter(Mandatory = $true)]
         $Id,
+
+        [Parameter(Mandatory = $true)]
         $groupTag
     )
 
@@ -213,16 +215,6 @@ Function Set-AutopilotDevice() {
     $Resource = "deviceManagement/windowsAutopilotDeviceIdentities/$Id/updateDeviceProperties"
 
     try {
-
-        if (!$id) {
-            Write-Host 'No Autopilot device Id specified, specify a valid Autopilot device Id' -f Red
-            break
-        }
-
-        if (!$groupTag) {
-            $groupTag = Read-Host 'No Group Tag specified, specify a Group Tag'
-        }
-
         $Autopilot = New-Object -TypeName psobject
         $Autopilot | Add-Member -MemberType NoteProperty -Name 'groupTag' -Value $groupTag
 
@@ -230,37 +222,50 @@ Function Set-AutopilotDevice() {
         # POST to Graph Service
         $uri = "https://graph.microsoft.com/$graphApiVersion/$($Resource)"
         Invoke-MgGraphRequest -Uri $uri -Method Post -Body $JSON -ContentType 'application/json'
-
     }
-
     catch {
-
-        Write-Error $Error[0].ErrorDetails.Message
+        Write-Error $_.Exception.Message
         break
-
     }
-
 }
 Function Get-EntraIDObject() {
 
-    [cmdletbinding()]
+    [CmdletBinding(DefaultParameterSetName = 'Default')]
     param
     (
 
+        [parameter(Mandatory = $false)]
+        [switch]$user,
+
+        [parameter(Mandatory = $false, ParameterSetName = 'devices')]
+        [switch]$device,
+
         [parameter(Mandatory = $true)]
-        [ValidateSet('User', 'Device')]
-        $object
+        [ValidateSet('Windows', 'iOS', 'Android', 'macOS')]
+        [string]$os
 
     )
 
     $graphApiVersion = 'beta'
-    if ($object -eq 'User') {
+    if ($user) {
         $Resource = "users?`$filter=userType eq 'member' and accountEnabled eq true"
     }
     else {
-        $Resource = "devices?`$filter=operatingSystem eq 'Windows'"
+        switch ($os) {
+            'iOS' {
+                $Resource = "devices?`$filter=operatingSystem eq 'iOS'"
+            }
+            'Android' {
+                $Resource = "devices?`$filter=operatingSystem eq 'Android'"
+            }
+            'macOS' {
+                $Resource = "devices?`$filter=operatingSystem eq 'macOS'"
+            }
+            'Windows' {
+                $Resource = "devices?`$filter=operatingSystem eq 'Windows'"
+            }
+        }
     }
-
     try {
 
         $uri = "https://graph.microsoft.com/$graphApiVersion/$Resource"
@@ -291,12 +296,26 @@ Function Get-ManagedDevices() {
     [cmdletbinding()]
     param
     (
-
+        [parameter(Mandatory = $true)]
+        [ValidateSet('Windows', 'iOS', 'Android', 'macOS')]
+        [string]$os
     )
 
     $graphApiVersion = 'beta'
-    $Resource = "deviceManagement/managedDevices?`$filter=operatingSystem eq 'Windows'"
-
+    switch ($os) {
+        'iOS' {
+            $Resource = "deviceManagement/managedDevices?`$filter=operatingSystem eq 'iOS'"
+        }
+        'Android' {
+            $Resource = "deviceManagement/managedDevices?`$filter=operatingSystem eq 'Android'"
+        }
+        'macOS' {
+            $Resource = "deviceManagement/managedDevices?`$filter=operatingSystem eq 'macOS'"
+        }
+        'Windows' {
+            $Resource = "deviceManagement/managedDevices?`$filter=operatingSystem eq 'Windows'"
+        }
+    }
     try {
 
         $uri = "https://graph.microsoft.com/$graphApiVersion/$Resource"
@@ -342,7 +361,7 @@ Write-Host '
 
 Write-Host 'Autopilot GroupTagger - Update Autopilot Device Group Tags in bulk.' -ForegroundColor Green
 Write-Host 'Nick Benton - oddsandendpoints.co.uk' -NoNewline;
-Write-Host ' | Version' -NoNewline; Write-Host ' 0.4.1 Public Preview' -ForegroundColor Yellow -NoNewline
+Write-Host ' | Version' -NoNewline; Write-Host ' 0.4.2 Public Preview' -ForegroundColor Yellow -NoNewline
 Write-Host ' | Last updated: ' -NoNewline; Write-Host '2025-02-04' -ForegroundColor Magenta
 Write-Host ''
 Write-Host 'If you have any feedback, please open an issue at https://github.com/ennnbeee/AutopilotGroupTagger/issues' -ForegroundColor Cyan
@@ -411,7 +430,7 @@ Write-Host 'All required scope permissions are present.' -ForegroundColor Green
 Start-Sleep -Seconds 2  # Delay to allow for Graph API to catch up
 Write-Host ''
 Write-Host 'Getting all Entra ID Windows computer objects...' -ForegroundColor Cyan
-$entraDevices = Get-EntraIDObject -object Device
+$entraDevices = Get-EntraIDObject -device -os Windows
 $entraDevicesHash = @{}
 foreach ($entraDevice in $entraDevices) {
     $entraDevicesHash[$entraDevice.deviceid] = $entraDevice
@@ -420,7 +439,7 @@ Write-Host "Found $($entraDevices.Count) Windows devices and associated IDs from
 
 Write-Host ''
 Write-Host 'Getting all Windows Intune devices...' -ForegroundColor Cyan
-$intuneDevices = Get-ManagedDevices
+$intuneDevices = Get-ManagedDevices -os Windows
 $intuneDevicesHash = @{}
 foreach ($intuneDevice in $intuneDevices) {
     $intuneDevicesHash[$intuneDevice.id] = $intuneDevice
@@ -457,30 +476,30 @@ foreach ($autopilotDevice in $autopilotDevices) {
 Write-Host "Found $($autopilotDevices.Count) Windows Autopilot Devices from Microsoft Intune." -ForegroundColor Green
 #endregion discovery
 
-#region Script
+#region choices
 while ($autopilotUpdateDevices.Count -eq 0) {
 
-    Write-Host
+    Write-Host ''
     Write-Host 'Please Choose one of the Group Tag options below: ' -ForegroundColor Magenta
-    Write-Host
+    Write-Host ''
     Write-Host ' (1) Update All Autopilot Devices Group Tags'
-    Write-Host
+    Write-Host ''
     Write-Host ' (2) Update All Autopilot Devices with Empty Group Tags'
-    Write-Host
+    Write-Host ''
     Write-Host ' (3) Update All Autopilot Devices with a specific Group Tag'
-    Write-Host
+    Write-Host ''
     Write-Host ' (4) Update All selected Manufacturers of Autopilot Device Group Tags'
-    Write-Host
+    Write-Host ''
     Write-Host ' (5) Update All selected Models of Autopilot Device Group Tags'
-    Write-Host
+    Write-Host ''
     Write-Host ' (6) Update All Autopilot Devices with a specific Purchase Order'
-    Write-Host
+    Write-Host ''
     Write-Host ' (7) Update a selection of Autopilot Devices Group Tags interactively'
-    Write-Host
+    Write-Host ''
     Write-Host ' (8) Update Autopilot Devices Group Tags using exported data'
-    Write-Host
+    Write-Host ''
     Write-Host ' (E) EXIT SCRIPT ' -ForegroundColor Red
-    Write-Host
+    Write-Host ''
     $choice = ''
     $autopilotUpdateDevices = @()
     $choice = Read-Host -Prompt 'Please select an option from the provided list, then press enter'
@@ -535,6 +554,7 @@ while ($autopilotUpdateDevices.Count -eq 0) {
         while ($autopilotPOs.count -eq 0) {
             $autopilotPOs = @($autopilotDevices | Select-Object -Property purchaseOrder -Unique | Out-GridView -PassThru -Title 'Select Purchase Order of Autopilot Devices to Update')
         }
+
         $autopilotUpdateDevices = $autopilotDevices | Where-Object { $_.purchaseOrder -in $autopilotPOs.purchaseOrder }
     }
     if ($choice -eq '7') {
@@ -545,10 +565,17 @@ while ($autopilotUpdateDevices.Count -eq 0) {
     if ($choice -eq '8') {
         # Report
         $autopilotDevices | Export-Csv -Path '.\AutopilotDevices.csv' -NoTypeInformation -Force
-        while ($autopilotUpdateDevices.count -eq 0) {
-            Write-Host 'Exported All Autopilot Devices to AutopilotDevices.csv' -ForegroundColor Cyan
-            Write-Warning -Message 'Please update the Group Tags on devices in AutopilotDevices.csv before continuing' -WarningAction Inquire
+        Write-Host ''
+        Write-Host 'Exported All Autopilot Device(s) to AutopilotDevices.csv' -ForegroundColor Cyan
+        while ($autopilotUpdateDevices.count -eq 0 -or ($autopilotUpdateDevices.groupTag | Measure-Object -Maximum).Maximum.length -gt 512) {
+            Write-Host ''
+            if (($autopilotUpdateDevices.groupTag | Measure-Object -Maximum).Maximum.length -gt 512) {
+                Write-Host 'One or more Group Tags are greater than 512 characters.' -ForegroundColor Red
+                Write-Host ''
+            }
+            Write-Warning -Message 'Please update the Group Tags on device(s) in AutopilotDevices.csv and save the file before continuing' -WarningAction Inquire
             $autopilotImportDevices = Import-Csv -Path .\AutopilotDevices.csv
+            $autopilotUpdateDevices = @()
             foreach ($autopilotImportDevice in $autopilotImportDevices) {
                 $apObject = $autopilotDevicesHash[$autopilotImportDevice.Id]
                 if ($autopilotImportDevice.groupTag -ne $apObject.groupTag) {
@@ -558,19 +585,28 @@ while ($autopilotUpdateDevices.Count -eq 0) {
         }
     }
 }
+#endregion choices
 
+#region group tag prompt
 if ($choice -ne '8') {
     Write-Host ''
-    [string]$groupTagNew = Read-Host "Please enter the NEW group tag you wish to apply to the $($autopilotUpdateDevices.Count) Autopilot devices"
+    [string]$groupTagNew = Read-Host "Please enter the NEW group tag you wish to apply to the $($autopilotUpdateDevices.Count) Autopilot device(s)"
     while ($groupTagNew -eq '' -or $null -eq $groupTagNew) {
-        [string]$groupTagNew = Read-Host "Please enter the NEW group tag you wish to apply to the $($autopilotUpdateDevices.Count) Autopilot devices"
+        [string]$groupTagNew = Read-Host "Please enter the NEW group tag you wish to apply to the $($autopilotUpdateDevices.Count) Autopilot device(s)"
+    }
+    #group tags have a maximum of 512 characters
+    while ($groupTagNew.length -gt 512) {
+        [string]$groupTagNew = Read-Host "Please enter the NEW group tag you wish to apply to the $($autopilotUpdateDevices.Count) Autopilot device(s) but with less than 512 characters"
     }
 }
+#endregion group tag prompt
+
+#region group tag update
 Write-Host ''
-Write-Host "The following $($autopilotUpdateDevices.Count) Autopilot devices are in scope to be updated:" -ForegroundColor Yellow
+Write-Host "The following $($autopilotUpdateDevices.Count) Autopilot device(s) are in scope to be updated:" -ForegroundColor Yellow
 $autopilotUpdateDevices | Format-Table -Property displayName, serialNumber, manufacturer, model, purchaseOrder -AutoSize
 
-Write-Warning -Message "You are about to update the group tag(s) for $($autopilotUpdateDevices.Count) Autopilot devices." -WarningAction Inquire
+Write-Warning -Message "You are about to update the group tag(s) for $($autopilotUpdateDevices.Count) Autopilot device(s)." -WarningAction Inquire
 
 foreach ($autopilotUpdateDevice in $autopilotUpdateDevices) {
     $rndWait = Get-Random -Minimum 0 -Maximum 2
@@ -585,5 +621,5 @@ foreach ($autopilotUpdateDevice in $autopilotUpdateDevices) {
     Write-Host "Updated Autopilot Group Tag with Serial Number: $($autopilotUpdateDevice.serialNumber) to '$groupTagNew'." -ForegroundColor Green
 }
 Write-Host ''
-Write-Host "Successfully updated $($autopilotUpdateDevices.Count) Autopilot devices with the new group tag(s)" -ForegroundColor Green
-#endregion Script
+Write-Host "Successfully updated $($autopilotUpdateDevices.Count) Autopilot device(s) with the new group tag(s)" -ForegroundColor Green
+#endregion group tag update
