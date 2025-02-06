@@ -1,6 +1,6 @@
 <#PSScriptInfo
 
-.VERSION 0.4.2
+.VERSION 0.4.3
 .GUID 63c8809e-5c8a-4ddc-82a4-29706992802f
 .AUTHOR Nick Benton
 .COMPANYNAME
@@ -13,6 +13,7 @@
 .REQUIREDSCRIPTS
 .EXTERNALSCRIPTDEPENDENCIES
 .RELEASENOTES
+Version 0.4.3: Improvements to user interface and error handling
 Version 0.4.2: Bug fixes and improvements
 Version 0.4.1: Updated authentication and module detection
 Version 0.4: Configured to run on PowerShell 5
@@ -341,6 +342,63 @@ Function Get-ManagedDevices() {
         break
     }
 }
+Function Read-YesNoChoice {
+    <#
+        .SYNOPSIS
+        Prompt the user for a Yes No choice.
+
+        .DESCRIPTION
+        Prompt the user for a Yes No choice and returns 0 for no and 1 for yes.
+
+        .PARAMETER Title
+        Title for the prompt
+
+        .PARAMETER Message
+        Message for the prompt
+
+		.PARAMETER DefaultOption
+        Specifies the default option if nothing is selected
+
+        .INPUTS
+        None. You cannot pipe objects to Read-YesNoChoice.
+
+        .OUTPUTS
+        Int. Read-YesNoChoice returns an Int, 0 for no and 1 for yes.
+
+        .EXAMPLE
+        PS> $choice = Read-YesNoChoice -Title "Please Choose" -Message "Yes or No?"
+
+		Please Choose
+		Yes or No?
+		[N] No  [Y] Yes  [?] Help (default is "N"): y
+		PS> $choice
+        1
+
+		.EXAMPLE
+        PS> $choice = Read-YesNoChoice -Title "Please Choose" -Message "Yes or No?" -DefaultOption 1
+
+		Please Choose
+		Yes or No?
+		[N] No  [Y] Yes  [?] Help (default is "Y"):
+		PS> $choice
+        1
+
+        .LINK
+        Online version: https://www.chriscolden.net/2024/03/01/yes-no-choice-function-in-powershell/
+    #>
+
+    Param (
+        [Parameter(Mandatory = $true)][String]$Title,
+        [Parameter(Mandatory = $true)][String]$Message,
+        [Parameter(Mandatory = $false)][Int]$DefaultOption = 0
+    )
+
+    $No = New-Object System.Management.Automation.Host.ChoiceDescription '&No', 'No'
+    $Yes = New-Object System.Management.Automation.Host.ChoiceDescription '&Yes', 'Yes'
+    $Options = [System.Management.Automation.Host.ChoiceDescription[]]($No, $Yes)
+
+    return $host.ui.PromptForChoice($Title, $Message, $Options, $DefaultOption)
+}
 #endregion Functions
 
 #region intro
@@ -527,35 +585,87 @@ while ($autopilotUpdateDevices.Count -eq 0) {
     }
     if ($choice -eq '3') {
         # GroupTag prompts
-        while ($autopilotGroupTags.count -eq 0) {
-            $autopilotGroupTags = @($autopilotDevices | Select-Object -Property groupTag -Unique | Out-GridView -PassThru -Title 'Select GroupTags of Autopilot Devices to Update')
+        $confirmGroupTags = 0
+        while ($confirmGroupTags -ne 1) {
+            while ($autopilotGroupTags.count -eq 0) {
+                $autopilotGroupTags = @($autopilotDevices | Select-Object -Property groupTag -Unique | Out-GridView -PassThru -Title 'Select GroupTags of Autopilot Devices to Update')
+            }
+            Write-Host ''
+            Write-Host 'The following Group Tag(s) were selected:' -ForegroundColor Cyan
+            Write-Host ''
+            $autopilotGroupTags.groupTag
+            Write-Host ''
+            $confirmGroupTags = Read-YesNoChoice -Title 'Please confirm Group Tag(s) selection' -Message 'Are these the correct Group Tag(s) to update?' -DefaultOption 1
+            if ($confirmGroupTags -eq 0) {
+                Write-Host ''
+                Write-Host 'Please re-select the Group Tags to update' -ForegroundColor Yellow
+                $autopilotGroupTags = $null
+            }
+            $autopilotUpdateDevices = $autopilotDevices | Where-Object { $_.groupTag -in $autopilotGroupTags.groupTag }
         }
-
-        $autopilotUpdateDevices = $autopilotDevices | Where-Object { $_.groupTag -in $autopilotGroupTags.groupTag }
     }
     if ($choice -eq '4') {
         # Manufacturer prompts
-        while ($autopilotManufacturers.count -eq 0) {
-            $autopilotManufacturers = @($autopilotDevices | Select-Object -Property manufacturer -Unique | Out-GridView -PassThru -Title 'Select Manufacturer of Autopilot Devices to Update')
+        $confirmManufacturers = 0
+        while ($confirmManufacturers -ne 1) {
+            while ($autopilotManufacturers.count -eq 0) {
+                $autopilotManufacturers = @($autopilotDevices | Select-Object -Property manufacturer -Unique | Out-GridView -PassThru -Title 'Select Manufacturer of Autopilot Devices to Update')
+            }
+            Write-Host ''
+            Write-Host 'The following Autopilot Device Manufacturer(s) were selected:' -ForegroundColor Cyan
+            Write-Host ''
+            $autopilotManufacturers.manufacturer
+            Write-Host ''
+            $confirmManufacturers = Read-YesNoChoice -Title 'Please confirm the Autopilot Device Manufacturer(s)' -Message 'Are these the correct Manufacturer(s) to update?' -DefaultOption 1
+            if ($confirmManufacturers -eq 0) {
+                Write-Host ''
+                Write-Host 'Please re-select the Manufacturer(s) to update' -ForegroundColor Yellow
+                $autopilotManufacturers = $null
+            }
+            $autopilotUpdateDevices = $autopilotDevices | Where-Object { $_.manufacturer -in $autopilotManufacturers.manufacturer }
         }
-
-        $autopilotUpdateDevices = $autopilotDevices | Where-Object { $_.manufacturer -in $autopilotManufacturers.manufacturer }
     }
     if ($choice -eq '5') {
         # Model prompts
-        while ($autopilotModels.count -eq 0) {
-            $autopilotModels = @($autopilotDevices | Select-Object -Property model -Unique | Out-GridView -PassThru -Title 'Select Models of Autopilot Devices to Update')
+        $confirmModels = 0
+        while ($confirmModels -ne 1) {
+            while ($autopilotModels.count -eq 0) {
+                $autopilotModels = @($autopilotDevices | Select-Object -Property model -Unique | Out-GridView -PassThru -Title 'Select Models of Autopilot Devices to Update')
+            }
+            Write-Host ''
+            Write-Host 'The following Autopilot Device Model(s) were selected:' -ForegroundColor Cyan
+            Write-Host ''
+            $autopilotModels.model
+            Write-Host ''
+            $confirmModels = Read-YesNoChoice -Title 'Please confirm the Autopilot Device Model(s)' -Message 'Are these the correct Model(s) to update?' -DefaultOption 1
+            if ($confirmModels -eq 0) {
+                Write-Host ''
+                Write-Host 'Please re-select the Models to update' -ForegroundColor Yellow
+                $autopilotModels = $null
+            }
+            $autopilotUpdateDevices = $autopilotDevices | Where-Object { $_.model -in $autopilotModels.model }
         }
-
-        $autopilotUpdateDevices = $autopilotDevices | Where-Object { $_.model -in $autopilotModels.model }
     }
     if ($choice -eq '6') {
         # Purchase Order prompts
-        while ($autopilotPOs.count -eq 0) {
-            $autopilotPOs = @($autopilotDevices | Select-Object -Property purchaseOrder -Unique | Out-GridView -PassThru -Title 'Select Purchase Order of Autopilot Devices to Update')
+        $confirmPOs = 0
+        while ($confirmPOs -ne 1) {
+            while ($autopilotPOs.count -eq 0) {
+                $autopilotPOs = @($autopilotDevices | Select-Object -Property purchaseOrder -Unique | Out-GridView -PassThru -Title 'Select Purchase Order of Autopilot Devices to Update')
+            }
+            Write-Host ''
+            Write-Host 'The following Autopilot Device Purchase Order(s) were selected:' -ForegroundColor Cyan
+            Write-Host ''
+            $autopilotPOs.purchaseOrder
+            Write-Host ''
+            $confirmPOs = Read-YesNoChoice -Title 'Please confirm Autopilot Device Purchase Order(s)' -Message 'Are these the correct Purchase Order(s) to update?' -DefaultOption 1
+            if ($confirmPOs -eq 0) {
+                Write-Host ''
+                Write-Host 'Please re-select the Purchase Order(s) to update' -ForegroundColor Yellow
+                $autopilotPOs = $null
+            }
+            $autopilotUpdateDevices = $autopilotDevices | Where-Object { $_.purchaseOrder -in $autopilotPOs.purchaseOrder }
         }
-
-        $autopilotUpdateDevices = $autopilotDevices | Where-Object { $_.purchaseOrder -in $autopilotPOs.purchaseOrder }
     }
     if ($choice -eq '7') {
         while ($autopilotUpdateDevices.count -eq 0) {
@@ -590,13 +700,13 @@ while ($autopilotUpdateDevices.Count -eq 0) {
 #region group tag prompt
 if ($choice -ne '8') {
     Write-Host ''
-    [string]$groupTagNew = Read-Host "Please enter the NEW group tag you wish to apply to the $($autopilotUpdateDevices.Count) Autopilot device(s)"
+    [string]$groupTagNew = Read-Host "Please enter the *NEW* group tag you wish to apply to the $($autopilotUpdateDevices.Count) Autopilot device(s)"
     while ($groupTagNew -eq '' -or $null -eq $groupTagNew) {
-        [string]$groupTagNew = Read-Host "Please enter the NEW group tag you wish to apply to the $($autopilotUpdateDevices.Count) Autopilot device(s)"
+        [string]$groupTagNew = Read-Host "Please enter the *NEW* group tag you wish to apply to the $($autopilotUpdateDevices.Count) Autopilot device(s)"
     }
     #group tags have a maximum of 512 characters
     while ($groupTagNew.length -gt 512) {
-        [string]$groupTagNew = Read-Host "Please enter the NEW group tag you wish to apply to the $($autopilotUpdateDevices.Count) Autopilot device(s) but with less than 512 characters"
+        [string]$groupTagNew = Read-Host "Please enter the *NEW* group tag you wish to apply to the $($autopilotUpdateDevices.Count) Autopilot device(s) but with less than 512 characters"
     }
 }
 #endregion group tag prompt
