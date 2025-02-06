@@ -1,6 +1,6 @@
 <#PSScriptInfo
 
-.VERSION 0.4.3
+.VERSION 0.4.4
 .GUID 63c8809e-5c8a-4ddc-82a4-29706992802f
 .AUTHOR Nick Benton
 .COMPANYNAME
@@ -13,6 +13,7 @@
 .REQUIREDSCRIPTS
 .EXTERNALSCRIPTDEPENDENCIES
 .RELEASENOTES
+Version 0.4.4: Added 'WhatIf' mode, and updated user experience of output of the progress of Group Tag updates
 Version 0.4.3: Improvements to user interface and error handling
 Version 0.4.2: Bug fixes and improvements
 Version 0.4.1: Updated authentication and module detection
@@ -30,6 +31,9 @@ Autopilot GroupTagger - Update Autopilot Device Group Tags in bulk.
 .DESCRIPTION
 The Autopilot GroupTagger script is designed to allow for bulk updating of Autopilot device group tags in Microsoft Intune.
 The script will connect to the Microsoft Graph API and retrieve all Autopilot devices, then allow for bulk updating of group tags based on various criteria.
+
+.PARAMETER whatIf
+Switch to enable WhatIf mode to simulate changes.
 
 .PARAMETER tenantId
 Provide the Id of the Entra ID tenant to connect to.
@@ -68,7 +72,10 @@ param(
 
     [Parameter(Mandatory = $true, ParameterSetName = 'appAuth', HelpMessage = 'Provide the App secret to allow for authentication to graph')]
     [ValidateNotNullOrEmpty()]
-    [String]$appSecret
+    [String]$appSecret,
+
+    [Parameter(Mandatory = $false, HelpMessage = 'WhatIf mode to simulate changes')]
+    [switch]$whatIf
 
 )
 
@@ -419,8 +426,8 @@ Write-Host '
 
 Write-Host 'Autopilot GroupTagger - Update Autopilot Device Group Tags in bulk.' -ForegroundColor Green
 Write-Host 'Nick Benton - oddsandendpoints.co.uk' -NoNewline;
-Write-Host ' | Version' -NoNewline; Write-Host ' 0.4.2 Public Preview' -ForegroundColor Yellow -NoNewline
-Write-Host ' | Last updated: ' -NoNewline; Write-Host '2025-02-04' -ForegroundColor Magenta
+Write-Host ' | Version' -NoNewline; Write-Host ' 0.4.4 Public Preview' -ForegroundColor Yellow -NoNewline
+Write-Host ' | Last updated: ' -NoNewline; Write-Host '2025-02-06' -ForegroundColor Magenta
 Write-Host ''
 Write-Host 'If you have any feedback, please open an issue at https://github.com/ennnbeee/AutopilotGroupTagger/issues' -ForegroundColor Cyan
 Write-Host ''
@@ -535,8 +542,12 @@ Write-Host "Found $($autopilotDevices.Count) Windows Autopilot Devices from Micr
 #endregion discovery
 
 #region choices
+$autopilotUpdateDevices = @()
 while ($autopilotUpdateDevices.Count -eq 0) {
-
+    if ($whatIf) {
+        Write-Host ''
+        Write-Host 'WhatIf mode enabled, no changes will be made.' -ForegroundColor Magenta
+    }
     Write-Host ''
     Write-Host 'Please Choose one of the Group Tag options below: ' -ForegroundColor Magenta
     Write-Host ''
@@ -716,20 +727,37 @@ Write-Host ''
 Write-Host "The following $($autopilotUpdateDevices.Count) Autopilot device(s) are in scope to be updated:" -ForegroundColor Yellow
 $autopilotUpdateDevices | Format-Table -Property displayName, serialNumber, manufacturer, model, purchaseOrder -AutoSize
 
+if ($whatIf) {
+    Write-Host ''
+    Write-Host 'WhatIf mode enabled, no changes will be made.' -ForegroundColor Magenta
+}
+
 Write-Warning -Message "You are about to update the group tag(s) for $($autopilotUpdateDevices.Count) Autopilot device(s)." -WarningAction Inquire
+
+$progressCount = 0
+$progressTotal = $($autopilotUpdateDevices.Count)
+$progressActivity = 'Updating Autopilot Group Tags'
+Write-Progress -Activity $progressActivity -Status 'Starting' -PercentComplete 0
 
 foreach ($autopilotUpdateDevice in $autopilotUpdateDevices) {
     $rndWait = Get-Random -Minimum 0 -Maximum 2
-
+    Start-Sleep -Seconds $rndWait
     if ($choice -eq '8') {
         $groupTagNew = $($autopilotUpdateDevice.groupTag)
     }
 
-    Write-Host "Updating Autopilot Group Tag with Serial Number: $($autopilotUpdateDevice.serialNumber) to '$groupTagNew'." -ForegroundColor Cyan
-    Start-Sleep -Seconds $rndWait
-    Set-AutopilotDevice -id $autopilotUpdateDevice.id -groupTag $groupTagNew
-    Write-Host "Updated Autopilot Group Tag with Serial Number: $($autopilotUpdateDevice.serialNumber) to '$groupTagNew'." -ForegroundColor Green
+    #Write-Host "Updating Autopilot Group Tag with Serial Number: $($autopilotUpdateDevice.serialNumber) to '$groupTagNew'." -ForegroundColor Cyan
+    $progressCount++
+    $progressComplete = (($progressCount / $progressTotal) * 100)
+    $progressStatus = "Group Tag: '$groupTagNew' - Device Serial Number: $($autopilotUpdateDevice.serialNumber)"
+    Write-Progress -Activity $progressActivity -Status $progressStatus -PercentComplete $progressComplete
+    if (!$whatIf) {
+        Set-AutopilotDevice -id $autopilotUpdateDevice.id -groupTag $groupTagNew
+    }
+    #Write-Host "Updated Autopilot Group Tag with Serial Number: $($autopilotUpdateDevice.serialNumber) to '$groupTagNew'." -ForegroundColor Green
 }
+
 Write-Host ''
+Write-Progress -Activity $progressActivity -Status 'Complete' -PercentComplete 100
 Write-Host "Successfully updated $($autopilotUpdateDevices.Count) Autopilot device(s) with the new group tag(s)" -ForegroundColor Green
 #endregion group tag update
