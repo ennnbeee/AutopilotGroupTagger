@@ -37,7 +37,10 @@ Once authenticated select one of the options to start applying Group Tags to you
 
 ## 🔄 Updates
 
-- **v0.4.3**
+- **v0.4.4**
+  - Include a `whatIf` parameter to simulate changes
+  - Updated user experience of output of the progress of Group Tag updates
+- v0.4.3
   - Allow for reselection of Group Tags, device makes and models, and purchase orders
 - v0.4.2
   - Improvements to functions and bug fixes
@@ -87,6 +90,17 @@ Then run the script with the corresponding Entra ID Tenant ID, AppId and AppSecr
 ```powershell
 .\AutopilotGroupTagger.ps1 -tenantID '437e8ffb-3030-469a-99da-e5b527908099' -appId '799ebcfa-ca81-4e63-baaf-a35123164d78' -appSecret 'g708Q~uot4xo9dU_1TjGQIuUr0UyBHNZmY2mdcy6'
 ```
+
+### ⁉ WhatIf Mode
+
+If you want the script to just simulate the update of Group Tags use the `whatIf` parameter:
+
+```PowerShell
+.\AutopilotGroupTagger.ps1 -whatIf
+```
+
+> [!NOTE]
+> This `whatIf` parameter will allow the simulation of the update of Group Tags, all other prompts will remain the same.
 
 ## 🎬 Demos
 
