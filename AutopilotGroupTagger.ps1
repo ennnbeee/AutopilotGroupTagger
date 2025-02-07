@@ -1,6 +1,6 @@
 <#PSScriptInfo
 
-.VERSION 0.4.5
+.VERSION 0.5
 .GUID 63c8809e-5c8a-4ddc-82a4-29706992802f
 .AUTHOR Nick Benton
 .COMPANYNAME
@@ -9,19 +9,21 @@
 .LICENSEURI https://github.com/ennnbeee/AutopilotGroupTagger/blob/main/LICENSE
 .PROJECTURI https://github.com/ennnbeee/AutopilotGroupTagger
 .ICONURI https://raw.githubusercontent.com/ennnbeee/AutopilotGroupTagger/refs/heads/main/img/agt-icon.png
-.EXTERNALMODULEDEPENDENCIES
+.EXTERNALMODULEDEPENDENCIES Microsoft.Graph.Authentication
 .REQUIREDSCRIPTS
 .EXTERNALSCRIPTDEPENDENCIES
 .RELEASENOTES
-Version 0.4.5: Function rework to support PowerShell gallery requirements
-Version 0.4.4: Added 'WhatIf' mode, and updated user experience of output of the progress of Group Tag updates
-Version 0.4.3: Improvements to user interface and error handling
-Version 0.4.2: Bug fixes and improvements
-Version 0.4.1: Updated authentication and module detection
-Version 0.4: Configured to run on PowerShell 5
-Version 0.3: Updated logic around Autopilot device selection
-Version 0.2: Included functionality to update group tags based on Purchase order
-Version 0.1: Initial release
+v0.1 - Initial release
+v0.2 - Included functionality to update group tags based on Purchase order
+v0.3 - Updated logic around Autopilot device selection
+v0.4 - Configured to run on PowerShell 5
+v0.4.1 - Updated authentication and module detection
+v0.4.2 - Bug fixes and improvements
+v0.4.3 - Improvements to user interface and error handling
+v0.4.4 - Added 'WhatIf' mode, and updated user experience of output of the progress of Group Tag updates
+v0.4.5 - Function rework to support PowerShell gallery requirements
+v0.5 - Added use of Out-ConsoleGridView for interactive selection of devices using module Microsoft.PowerShell.ConsoleGuiTools
+
 .PRIVATEDATA
 #>
 
@@ -57,6 +59,11 @@ Pass through Authentication
 App Authentication
 .\AutopilotGroupTagger.ps1 -tenantId '437e8ffb-3030-469a-99da-e5b527908099' -appId '799ebcfa-ca81-4e72-baaf-a35126464d67' -appSecret 'g708Q~uof4xo9dU_1EjGQIuUr0UyBHNZmY2mcdy6'
 
+.NOTES
+Version:        0.5
+Author:         Nick Benton
+WWW:            oddsandendpoints.co.uk
+Creation Date:  07/02/2025
 #>
 
 [CmdletBinding(DefaultParameterSetName = 'Default')]
@@ -438,7 +445,7 @@ Write-Host '
 
 Write-Host 'Autopilot GroupTagger - Update Autopilot Device Group Tags in bulk.' -ForegroundColor Green
 Write-Host 'Nick Benton - oddsandendpoints.co.uk' -NoNewline;
-Write-Host ' | Version' -NoNewline; Write-Host ' 0.4.5 Public Preview' -ForegroundColor Yellow -NoNewline
+Write-Host ' | Version' -NoNewline; Write-Host ' 0.5 Public Preview' -ForegroundColor Yellow -NoNewline
 Write-Host ' | Last updated: ' -NoNewline; Write-Host '2025-02-07' -ForegroundColor Magenta
 Write-Host ''
 Write-Host 'If you have any feedback, please open an issue at https://github.com/ennnbeee/AutopilotGroupTagger/issues' -ForegroundColor Cyan
@@ -451,16 +458,18 @@ $requiredScopes = @('Device.Read.All', 'DeviceManagementServiceConfig.ReadWrite.
 #endregion variables
 
 #region module check
-$graphModule = 'Microsoft.Graph.Authentication'
-Write-Host "Checking for $graphModule PowerShell module..." -ForegroundColor Cyan
-Write-Host ''
-If (!(Get-Module -Name $graphModule -ListAvailable)) {
-    Install-Module -Name $graphModule -Scope CurrentUser -AllowClobber
-}
-Write-Host "PowerShell Module $graphModule found." -ForegroundColor Green
-Write-Host ''
-if (!([System.AppDomain]::CurrentDomain.GetAssemblies() | Where-Object FullName -Like "*$graphModule*")) {
-    Import-Module -Name $graphModule -Force
+$modules = @('Microsoft.Graph.Authentication', 'Microsoft.PowerShell.ConsoleGuiTools')
+foreach ($module in $modules) {
+    Write-Host "Checking for $module PowerShell module..." -ForegroundColor Cyan
+    Write-Host ''
+    If (!(Get-Module -Name $module -ListAvailable)) {
+        Install-Module -Name $module -Scope CurrentUser -AllowClobber
+    }
+    Write-Host "PowerShell Module $module found." -ForegroundColor Green
+    Write-Host ''
+    if (!([System.AppDomain]::CurrentDomain.GetAssemblies() | Where-Object FullName -Like "*$module*")) {
+        Import-Module -Name $module -Force
+    }
 }
 #endregion module check
 
@@ -613,7 +622,8 @@ while ($autopilotUpdateDevices.Count -eq 0) {
         $confirmGroupTags = 0
         while ($confirmGroupTags -ne 1) {
             while ($autopilotGroupTags.count -eq 0) {
-                $autopilotGroupTags = @($autopilotDevices | Select-Object -Property groupTag -Unique | Out-GridView -PassThru -Title 'Select GroupTags of Autopilot Devices to Update')
+                #$autopilotGroupTags = @($autopilotDevices | Select-Object -Property groupTag -Unique | Out-GridView -PassThru -Title 'Select GroupTags of Autopilot Devices to Update')
+                $autopilotGroupTags = @($autopilotDevices | Select-Object -Property groupTag -Unique | Out-ConsoleGridView -Title 'Select GroupTags of Autopilot Devices to Update' -OutputMode Multiple)
             }
             Write-Host ''
             Write-Host 'The following Group Tag(s) were selected:' -ForegroundColor Cyan
@@ -634,7 +644,8 @@ while ($autopilotUpdateDevices.Count -eq 0) {
         $confirmManufacturers = 0
         while ($confirmManufacturers -ne 1) {
             while ($autopilotManufacturers.count -eq 0) {
-                $autopilotManufacturers = @($autopilotDevices | Select-Object -Property manufacturer -Unique | Out-GridView -PassThru -Title 'Select Manufacturer of Autopilot Devices to Update')
+                #$autopilotManufacturers = @($autopilotDevices | Select-Object -Property manufacturer -Unique | Out-GridView -PassThru -Title 'Select Manufacturer of Autopilot Devices to Update')
+                $autopilotManufacturers = @($autopilotDevices | Select-Object -Property manufacturer -Unique | Out-ConsoleGridView -Title 'Select Manufacturer of Autopilot Devices to Update' -OutputMode Multiple)
             }
             Write-Host ''
             Write-Host 'The following Autopilot Device Manufacturer(s) were selected:' -ForegroundColor Cyan
@@ -655,7 +666,8 @@ while ($autopilotUpdateDevices.Count -eq 0) {
         $confirmModels = 0
         while ($confirmModels -ne 1) {
             while ($autopilotModels.count -eq 0) {
-                $autopilotModels = @($autopilotDevices | Select-Object -Property model -Unique | Out-GridView -PassThru -Title 'Select Models of Autopilot Devices to Update')
+                #$autopilotModels = @($autopilotDevices | Select-Object -Property model -Unique | Out-GridView -PassThru -Title 'Select Models of Autopilot Devices to Update')
+                $autopilotModels = @($autopilotDevices | Select-Object -Property model -Unique | Out-ConsoleGridView -Title 'Select Models of Autopilot Devices to Update' -OutputMode Multiple)
             }
             Write-Host ''
             Write-Host 'The following Autopilot Device Model(s) were selected:' -ForegroundColor Cyan
@@ -676,7 +688,8 @@ while ($autopilotUpdateDevices.Count -eq 0) {
         $confirmPOs = 0
         while ($confirmPOs -ne 1) {
             while ($autopilotPOs.count -eq 0) {
-                $autopilotPOs = @($autopilotDevices | Select-Object -Property purchaseOrder -Unique | Out-GridView -PassThru -Title 'Select Purchase Order of Autopilot Devices to Update')
+                #$autopilotPOs = @($autopilotDevices | Select-Object -Property purchaseOrder -Unique | Out-GridView -PassThru -Title 'Select Purchase Order of Autopilot Devices to Update')
+                $autopilotPOs = @($autopilotDevices | Select-Object -Property purchaseOrder -Unique | Out-ConsoleGridView -Title 'Select Purchase Order of Autopilot Devices to Update' -OutputMode Multiple)
             }
             Write-Host ''
             Write-Host 'The following Autopilot Device Purchase Order(s) were selected:' -ForegroundColor Cyan
@@ -694,7 +707,8 @@ while ($autopilotUpdateDevices.Count -eq 0) {
     }
     if ($choice -eq '7') {
         while ($autopilotUpdateDevices.count -eq 0) {
-            $autopilotUpdateDevices = @($autopilotDevices | Out-GridView -PassThru -Title 'Select Autopilot Devices to Update')
+            #$autopilotUpdateDevices = @($autopilotDevices | Out-GridView -PassThru -Title 'Select Autopilot Devices to Update')
+            $autopilotUpdateDevices = @($autopilotDevices | Out-ConsoleGridView -Title 'Select Autopilot Devices to Update' -OutputMode Multiple)
         }
     }
     if ($choice -eq '8') {
@@ -756,7 +770,7 @@ $host.PrivateData.ProgressForegroundColor = 'green'
 Write-Progress -Activity $progressActivity -Status 'Starting' -PercentComplete 0
 
 foreach ($autopilotUpdateDevice in $autopilotUpdateDevices) {
-    $rndWait = Get-Random -Minimum 0 -Maximum 2
+    $rndWait = Get-Random -Minimum 1 -Maximum 2
     Start-Sleep -Seconds $rndWait
     if ($choice -eq '8') {
         $groupTagNew = $($autopilotUpdateDevice.groupTag)
