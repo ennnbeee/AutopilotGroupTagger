@@ -37,7 +37,9 @@ Once authenticated select one of the options to start applying Group Tags to you
 
 ## 🔄 Updates
 
-- **v0.4.4**
+- **v0.4.5**
+  - Resolved issues reported by `Invoke-ScriptAnalyze`
+- v0.4.4
   - Include a `whatIf` parameter to simulate changes
   - Updated user experience of output of the progress of Group Tag updates
 - v0.4.3
