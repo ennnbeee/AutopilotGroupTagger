@@ -1,18 +1,19 @@
 <#PSScriptInfo
 
-.VERSION 0.4.4
+.VERSION 0.4.5
 .GUID 63c8809e-5c8a-4ddc-82a4-29706992802f
 .AUTHOR Nick Benton
 .COMPANYNAME
 .COPYRIGHT GPL
-.TAGS
+.TAGS = 'Graph','Intune',Windows','Autopilot','Group Tags'
 .LICENSEURI https://github.com/ennnbeee/AutopilotGroupTagger/blob/main/LICENSE
 .PROJECTURI https://github.com/ennnbeee/AutopilotGroupTagger
-.ICONURI
+.ICONURI https://raw.githubusercontent.com/ennnbeee/AutopilotGroupTagger/refs/heads/main/img/agt-icon.png
 .EXTERNALMODULEDEPENDENCIES
 .REQUIREDSCRIPTS
 .EXTERNALSCRIPTDEPENDENCIES
 .RELEASENOTES
+Version 0.4.5: Function rework to support PowerShell gallery requirements
 Version 0.4.4: Added 'WhatIf' mode, and updated user experience of output of the progress of Group Tag updates
 Version 0.4.3: Improvements to user interface and error handling
 Version 0.4.2: Bug fixes and improvements
@@ -154,7 +155,7 @@ Connect-ToGraph -tenantId $tenantId -appId $app -appSecret $secret
         }
     }
 }
-Function Get-AutopilotDevices() {
+Function Get-AutopilotDevice() {
 
     <#
     .SYNOPSIS
@@ -162,10 +163,10 @@ Function Get-AutopilotDevices() {
     .DESCRIPTION
     The function connects to the Graph API Interface and gets any autopilot devices
     .EXAMPLE
-    Get-AutopilotDevices
+    Get-AutopilotDevice
     Returns any autopilot devices
     .NOTES
-    NAME: Get-AutopilotDevices
+    NAME: Get-AutopilotDevice
     #>
 
     $graphApiVersion = 'Beta'
@@ -210,7 +211,7 @@ Function Set-AutopilotDevice() {
     NAME: Set-AutopilotDevice
     #>
 
-    [CmdletBinding()]
+    [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'high')]
     param(
         [Parameter(Mandatory = $true)]
         $Id,
@@ -219,22 +220,33 @@ Function Set-AutopilotDevice() {
         $groupTag
     )
 
-    $graphApiVersion = 'Beta'
-    $Resource = "deviceManagement/windowsAutopilotDeviceIdentities/$Id/updateDeviceProperties"
+    process {
+        $graphApiVersion = 'Beta'
+        $Resource = "deviceManagement/windowsAutopilotDeviceIdentities/$Id/updateDeviceProperties"
+        if ($PSCmdlet.ShouldProcess('Autopilot Device', 'Update')) {
+            try {
+                $Autopilot = New-Object -TypeName psobject
+                $Autopilot | Add-Member -MemberType NoteProperty -Name 'groupTag' -Value $groupTag
 
-    try {
-        $Autopilot = New-Object -TypeName psobject
-        $Autopilot | Add-Member -MemberType NoteProperty -Name 'groupTag' -Value $groupTag
+                $JSON = $Autopilot | ConvertTo-Json -Depth 3
+                # POST to Graph Service
+                $uri = "https://graph.microsoft.com/$graphApiVersion/$($Resource)"
+                Invoke-MgGraphRequest -Uri $uri -Method Post -Body $JSON -ContentType 'application/json'
+            }
+            catch {
+                Write-Error $_.Exception.Message
+                break
+            }
+        }
+        elseif ($WhatIfPreference.IsPresent) {
+            #On a Whatif we return the full splat we would have used to call
+            Write-Output "Autopilot Device $Id would have been updated with Group Tag $groupTag"
+        }
+        else {
+            Write-Output "Autopilot Device $Id was not updated with Group Tag $groupTag"
+        }
+    }
 
-        $JSON = $Autopilot | ConvertTo-Json -Depth 3
-        # POST to Graph Service
-        $uri = "https://graph.microsoft.com/$graphApiVersion/$($Resource)"
-        Invoke-MgGraphRequest -Uri $uri -Method Post -Body $JSON -ContentType 'application/json'
-    }
-    catch {
-        Write-Error $_.Exception.Message
-        break
-    }
 }
 Function Get-EntraIDObject() {
 
@@ -248,7 +260,7 @@ Function Get-EntraIDObject() {
         [parameter(Mandatory = $false, ParameterSetName = 'devices')]
         [switch]$device,
 
-        [parameter(Mandatory = $true)]
+        [parameter(Mandatory = $true, ParameterSetName = 'devices')]
         [ValidateSet('Windows', 'iOS', 'Android', 'macOS')]
         [string]$os
 
@@ -258,7 +270,7 @@ Function Get-EntraIDObject() {
     if ($user) {
         $Resource = "users?`$filter=userType eq 'member' and accountEnabled eq true"
     }
-    else {
+    elseif ($device) {
         switch ($os) {
             'iOS' {
                 $Resource = "devices?`$filter=operatingSystem eq 'iOS'"
@@ -299,7 +311,7 @@ Function Get-EntraIDObject() {
         break
     }
 }
-Function Get-ManagedDevices() {
+Function Get-ManagedDevice() {
 
     [cmdletbinding()]
     param
@@ -426,8 +438,8 @@ Write-Host '
 
 Write-Host 'Autopilot GroupTagger - Update Autopilot Device Group Tags in bulk.' -ForegroundColor Green
 Write-Host 'Nick Benton - oddsandendpoints.co.uk' -NoNewline;
-Write-Host ' | Version' -NoNewline; Write-Host ' 0.4.4 Public Preview' -ForegroundColor Yellow -NoNewline
-Write-Host ' | Last updated: ' -NoNewline; Write-Host '2025-02-06' -ForegroundColor Magenta
+Write-Host ' | Version' -NoNewline; Write-Host ' 0.4.5 Public Preview' -ForegroundColor Yellow -NoNewline
+Write-Host ' | Last updated: ' -NoNewline; Write-Host '2025-02-07' -ForegroundColor Magenta
 Write-Host ''
 Write-Host 'If you have any feedback, please open an issue at https://github.com/ennnbeee/AutopilotGroupTagger/issues' -ForegroundColor Cyan
 Write-Host ''
@@ -441,12 +453,12 @@ $requiredScopes = @('Device.Read.All', 'DeviceManagementServiceConfig.ReadWrite.
 #region module check
 $graphModule = 'Microsoft.Graph.Authentication'
 Write-Host "Checking for $graphModule PowerShell module..." -ForegroundColor Cyan
-
+Write-Host ''
 If (!(Get-Module -Name $graphModule -ListAvailable)) {
     Install-Module -Name $graphModule -Scope CurrentUser -AllowClobber
 }
 Write-Host "PowerShell Module $graphModule found." -ForegroundColor Green
-
+Write-Host ''
 if (!([System.AppDomain]::CurrentDomain.GetAssemblies() | Where-Object FullName -Like "*$graphModule*")) {
     Import-Module -Name $graphModule -Force
 }
@@ -468,7 +480,9 @@ try {
             Connect-ToGraph -tenantId $tenantId -appId $appId -appSecret $appSecret -ErrorAction Stop
         }
     }
-    Write-Host 'Successfully connected to Microsoft Graph.' -ForegroundColor Green
+    $context = Get-MgContext
+    Write-Host ''
+    Write-Host "Successfully connected to Microsoft Graph tenant $($context.TenantId)." -ForegroundColor Green
 }
 catch {
     Write-Error $_.Exception.Message
@@ -477,17 +491,17 @@ catch {
 #endregion app auth
 
 #region scopes
-$context = Get-MgContext
 $currentScopes = $context.Scopes
-
 # Validate required permissions
 $missingScopes = $requiredScopes | Where-Object { $_ -notin $currentScopes }
 if ($missingScopes.Count -gt 0) {
     Write-Host 'WARNING: The following scope permissions are missing:' -ForegroundColor Red
     $missingScopes | ForEach-Object { Write-Host "  - $_" -ForegroundColor Yellow }
+    Write-Host ''
     Write-Host 'Please ensure these permissions are granted to the app registration for full functionality.' -ForegroundColor Yellow
     exit
 }
+Write-Host ''
 Write-Host 'All required scope permissions are present.' -ForegroundColor Green
 #endregion scopes
 
@@ -504,7 +518,7 @@ Write-Host "Found $($entraDevices.Count) Windows devices and associated IDs from
 
 Write-Host ''
 Write-Host 'Getting all Windows Intune devices...' -ForegroundColor Cyan
-$intuneDevices = Get-ManagedDevices -os Windows
+$intuneDevices = Get-ManagedDevice -os Windows
 $intuneDevicesHash = @{}
 foreach ($intuneDevice in $intuneDevices) {
     $intuneDevicesHash[$intuneDevice.id] = $intuneDevice
@@ -513,7 +527,7 @@ Write-Host "Found $($intuneDevices.Count) Windows device objects and associated 
 Write-Host ''
 
 Write-Host 'Getting all Windows Autopilot devices...' -ForegroundColor Cyan
-$apDevices = Get-AutopilotDevices
+$apDevices = Get-AutopilotDevice
 $autopilotDevices = @()
 foreach ($apDevice in $apDevices) {
     # Details of Entra ID device object
@@ -737,6 +751,8 @@ Write-Warning -Message "You are about to update the group tag(s) for $($autopilo
 $progressCount = 0
 $progressTotal = $($autopilotUpdateDevices.Count)
 $progressActivity = 'Updating Autopilot Group Tags'
+$Host.PrivateData.ProgressBackgroundColor = $Host.UI.RawUI.BackgroundColor
+$host.PrivateData.ProgressForegroundColor = 'green'
 Write-Progress -Activity $progressActivity -Status 'Starting' -PercentComplete 0
 
 foreach ($autopilotUpdateDevice in $autopilotUpdateDevices) {
@@ -752,7 +768,7 @@ foreach ($autopilotUpdateDevice in $autopilotUpdateDevices) {
     $progressStatus = "Group Tag: '$groupTagNew' - Device Serial Number: $($autopilotUpdateDevice.serialNumber)"
     Write-Progress -Activity $progressActivity -Status $progressStatus -PercentComplete $progressComplete
     if (!$whatIf) {
-        Set-AutopilotDevice -id $autopilotUpdateDevice.id -groupTag $groupTagNew
+        Set-AutopilotDevice -id $autopilotUpdateDevice.id -groupTag $groupTagNew -Confirm:$false
     }
     #Write-Host "Updated Autopilot Group Tag with Serial Number: $($autopilotUpdateDevice.serialNumber) to '$groupTagNew'." -ForegroundColor Green
 }
