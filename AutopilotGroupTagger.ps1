@@ -94,7 +94,7 @@ param(
 )
 
 #region Functions
-Function Test-JSON() {
+Function Test-JSON {
 
     param (
         $JSON

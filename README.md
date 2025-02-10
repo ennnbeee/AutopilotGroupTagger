@@ -9,6 +9,11 @@ AutopilotGroupTagger is currently in Public Preview, meaning that although the i
 > [!TIP]
 > If you do encounter bugs, want to contribute, submit feedback or suggestions, please create and an issue.
 
+## ☑ Options
+
+- 🛍 Option to create Dynamic Groups based on new Group Tags
+- ⁉ Option to run in whatIf mode to simulate Group Tag or Dynamic Group changes
+
 ## 🌟 Features
 
 Once authenticated select one of the options to start updating Group Tags to your Autopilot Devices:
@@ -22,7 +27,6 @@ Once authenticated select one of the options to start updating Group Tags to you
 - ❔ Update specific interactively selected Windows Autopilot Devices with a new Group Tag
 - 📔 Export Windows Autopilot Device data, and selectively update multiple devices with new Group Tags
 - 🛑 Remove existing Group Tags across all scenarios
-- 🛍 Option to create Dynamic Groups based on new Group Tags
 
 > [!NOTE]
 > Before the Group Tags are assigned or removed, or the groups created, you are prompted whether you want to continue.
