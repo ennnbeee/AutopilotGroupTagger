@@ -1,27 +1,29 @@
 <#PSScriptInfo
 
-.VERSION 0.4.5
+.VERSION 0.5
 .GUID 63c8809e-5c8a-4ddc-82a4-29706992802f
 .AUTHOR Nick Benton
 .COMPANYNAME
 .COPYRIGHT GPL
-.TAGS = 'Graph','Intune',Windows','Autopilot','Group Tags'
+.TAGS Graph Intune Windows Autopilot GroupTags
 .LICENSEURI https://github.com/ennnbeee/AutopilotGroupTagger/blob/main/LICENSE
 .PROJECTURI https://github.com/ennnbeee/AutopilotGroupTagger
 .ICONURI https://raw.githubusercontent.com/ennnbeee/AutopilotGroupTagger/refs/heads/main/img/agt-icon.png
-.EXTERNALMODULEDEPENDENCIES
+.EXTERNALMODULEDEPENDENCIES Microsoft.Graph.Authentication
 .REQUIREDSCRIPTS
 .EXTERNALSCRIPTDEPENDENCIES
 .RELEASENOTES
-Version 0.4.5: Function rework to support PowerShell gallery requirements
-Version 0.4.4: Added 'WhatIf' mode, and updated user experience of output of the progress of Group Tag updates
-Version 0.4.3: Improvements to user interface and error handling
-Version 0.4.2: Bug fixes and improvements
-Version 0.4.1: Updated authentication and module detection
-Version 0.4: Configured to run on PowerShell 5
-Version 0.3: Updated logic around Autopilot device selection
-Version 0.2: Included functionality to update group tags based on Purchase order
-Version 0.1: Initial release
+v0.1 - Initial release
+v0.2 - Included functionality to update group tags based on Purchase order
+v0.3 - Updated logic around Autopilot device selection
+v0.4 - Configured to run on PowerShell 5
+v0.4.1 - Updated authentication and module detection
+v0.4.2 - Bug fixes and improvements
+v0.4.3 - Improvements to user interface and error handling
+v0.4.4 - Added 'WhatIf' mode, and updated user experience of output of the progress of Group Tag updates
+v0.4.5 - Function rework to support PowerShell gallery requirements
+v0.5 - Now supports PowerShell 7 on macOS, removal of Group Tags, and Dynamic Group creation
+
 .PRIVATEDATA
 #>
 
@@ -35,6 +37,9 @@ The script will connect to the Microsoft Graph API and retrieve all Autopilot de
 
 .PARAMETER whatIf
 Switch to enable WhatIf mode to simulate changes.
+
+.PARAMETER createGroups
+Switch to enable the creation of dynamic groups based on Group Tags.
 
 .PARAMETER tenantId
 Provide the Id of the Entra ID tenant to connect to.
@@ -57,11 +62,19 @@ Pass through Authentication
 App Authentication
 .\AutopilotGroupTagger.ps1 -tenantId '437e8ffb-3030-469a-99da-e5b527908099' -appId '799ebcfa-ca81-4e72-baaf-a35126464d67' -appSecret 'g708Q~uof4xo9dU_1EjGQIuUr0UyBHNZmY2mcdy6'
 
+.NOTES
+Version:        0.5
+Author:         Nick Benton
+WWW:            oddsandendpoints.co.uk
+Creation Date:  10/02/2025
 #>
 
 [CmdletBinding(DefaultParameterSetName = 'Default')]
 
 param(
+
+    [Parameter(Mandatory = $false, HelpMessage = 'Switch to enable the creation of dynamic groups based on Group Tags')]
+    [switch]$createGroups,
 
     [Parameter(Mandatory = $false, HelpMessage = 'Provide the Id of the Entra ID tenant to connect to')]
     [ValidateLength(36, 36)]
@@ -81,6 +94,27 @@ param(
 )
 
 #region Functions
+Function Test-JSON() {
+
+    param (
+        $JSON
+    )
+
+    try {
+        $TestJSON = ConvertFrom-Json $JSON -ErrorAction Stop
+        $TestJSON | Out-Null
+        $validJson = $true
+    }
+    catch {
+        $validJson = $false
+        $_.Exception
+    }
+    if (!$validJson) {
+        Write-Host "Provided JSON isn't in valid JSON format" -ForegroundColor Red
+        break
+    }
+
+}
 Function Connect-ToGraph {
     <#
 .SYNOPSIS
@@ -361,6 +395,52 @@ Function Get-ManagedDevice() {
         break
     }
 }
+Function Get-MDMGroup() {
+
+    [cmdletbinding()]
+
+    param
+    (
+        [parameter(Mandatory = $true)]
+        [string]$groupName
+    )
+
+    $graphApiVersion = 'beta'
+    $Resource = 'groups'
+
+    try {
+        $searchTerm = 'search="displayName:' + $groupName + '"'
+        $uri = "https://graph.microsoft.com/$graphApiVersion/$Resource`?$searchTerm"
+        (Invoke-MgGraphRequest -Uri $uri -Method Get -Headers @{ConsistencyLevel = 'eventual' }).Value
+    }
+    catch {
+        Write-Error $_.Exception.Message
+        break
+    }
+}
+Function New-MDMGroup() {
+
+    [cmdletbinding()]
+
+    param
+    (
+        [Parameter(Mandatory = $true)]
+        $JSON
+    )
+
+    $graphApiVersion = 'beta'
+    $Resource = 'groups'
+
+    try {
+        Test-Json -Json $JSON
+        $uri = "https://graph.microsoft.com/$graphApiVersion/$($Resource)"
+        Invoke-MgGraphRequest -Uri $uri -Method Post -Body $JSON -ContentType 'application/json'
+    }
+    catch {
+        Write-Error $_.Exception.Message
+        break
+    }
+}
 Function Read-YesNoChoice {
     <#
         .SYNOPSIS
@@ -438,29 +518,38 @@ Write-Host '
 
 Write-Host 'Autopilot GroupTagger - Update Autopilot Device Group Tags in bulk.' -ForegroundColor Green
 Write-Host 'Nick Benton - oddsandendpoints.co.uk' -NoNewline;
-Write-Host ' | Version' -NoNewline; Write-Host ' 0.4.5 Public Preview' -ForegroundColor Yellow -NoNewline
-Write-Host ' | Last updated: ' -NoNewline; Write-Host '2025-02-07' -ForegroundColor Magenta
+Write-Host ' | Version' -NoNewline; Write-Host ' 0.5 Public Preview' -ForegroundColor Yellow -NoNewline
+Write-Host ' | Last updated: ' -NoNewline; Write-Host '2025-02-10' -ForegroundColor Magenta
 Write-Host ''
 Write-Host 'If you have any feedback, please open an issue at https://github.com/ennnbeee/AutopilotGroupTagger/issues' -ForegroundColor Cyan
 Write-Host ''
 #endregion intro
 
 #region variables
-$requiredScopes = @('Device.Read.All', 'DeviceManagementServiceConfig.ReadWrite.All', 'DeviceManagementManagedDevices.Read.All')
+$groupPrefix = 'AGT-Autopilot-'
+$requiredScopes = @('Device.Read.All', 'DeviceManagementServiceConfig.ReadWrite.All', 'DeviceManagementManagedDevices.Read.All', 'Group.ReadWrite.All')
 [String[]]$scopes = $requiredScopes -join ', '
+$rndWait = Get-Random -Minimum 1 -Maximum 2
 #endregion variables
 
 #region module check
-$graphModule = 'Microsoft.Graph.Authentication'
-Write-Host "Checking for $graphModule PowerShell module..." -ForegroundColor Cyan
-Write-Host ''
-If (!(Get-Module -Name $graphModule -ListAvailable)) {
-    Install-Module -Name $graphModule -Scope CurrentUser -AllowClobber
+if ($PSVersionTable.PSVersion.Major -eq 7) {
+    $modules = @('Microsoft.Graph.Authentication', 'Microsoft.PowerShell.ConsoleGuiTools')
 }
-Write-Host "PowerShell Module $graphModule found." -ForegroundColor Green
-Write-Host ''
-if (!([System.AppDomain]::CurrentDomain.GetAssemblies() | Where-Object FullName -Like "*$graphModule*")) {
-    Import-Module -Name $graphModule -Force
+else {
+    $modules = @('Microsoft.Graph.Authentication')
+}
+foreach ($module in $modules) {
+    Write-Host "Checking for $module PowerShell module..." -ForegroundColor Cyan
+    Write-Host ''
+    If (!(Get-Module -Name $module -ListAvailable)) {
+        Install-Module -Name $module -Scope CurrentUser -AllowClobber
+    }
+    Write-Host "PowerShell Module $module found." -ForegroundColor Green
+    Write-Host ''
+    if (!([System.AppDomain]::CurrentDomain.GetAssemblies() | Where-Object FullName -Like "*$module*")) {
+        Import-Module -Name $module -Force
+    }
 }
 #endregion module check
 
@@ -562,6 +651,10 @@ while ($autopilotUpdateDevices.Count -eq 0) {
         Write-Host ''
         Write-Host 'WhatIf mode enabled, no changes will be made.' -ForegroundColor Magenta
     }
+    if ($createGroups) {
+        Write-Host ''
+        Write-Host 'Dynamic Groups will be created based on Group Tags' -ForegroundColor Magenta
+    }
     Write-Host ''
     Write-Host 'Please Choose one of the Group Tag options below: ' -ForegroundColor Magenta
     Write-Host ''
@@ -613,7 +706,12 @@ while ($autopilotUpdateDevices.Count -eq 0) {
         $confirmGroupTags = 0
         while ($confirmGroupTags -ne 1) {
             while ($autopilotGroupTags.count -eq 0) {
-                $autopilotGroupTags = @($autopilotDevices | Select-Object -Property groupTag -Unique | Out-GridView -PassThru -Title 'Select GroupTags of Autopilot Devices to Update')
+                if ($PSVersionTable.PSVersion.Major -eq 7) {
+                    $autopilotGroupTags = @($autopilotDevices | Select-Object -Property groupTag -Unique | Out-ConsoleGridView -Title 'Select GroupTags of Autopilot Devices to Update' -OutputMode Multiple)
+                }
+                else {
+                    $autopilotGroupTags = @($autopilotDevices | Select-Object -Property groupTag -Unique | Out-GridView -PassThru -Title 'Select GroupTags of Autopilot Devices to Update')
+                }
             }
             Write-Host ''
             Write-Host 'The following Group Tag(s) were selected:' -ForegroundColor Cyan
@@ -634,7 +732,12 @@ while ($autopilotUpdateDevices.Count -eq 0) {
         $confirmManufacturers = 0
         while ($confirmManufacturers -ne 1) {
             while ($autopilotManufacturers.count -eq 0) {
-                $autopilotManufacturers = @($autopilotDevices | Select-Object -Property manufacturer -Unique | Out-GridView -PassThru -Title 'Select Manufacturer of Autopilot Devices to Update')
+                if ($PSVersionTable.PSVersion.Major -eq 7) {
+                    $autopilotManufacturers = @($autopilotDevices | Select-Object -Property manufacturer -Unique | Out-ConsoleGridView -Title 'Select Manufacturer of Autopilot Devices to Update' -OutputMode Multiple)
+                }
+                Else {
+                    $autopilotManufacturers = @($autopilotDevices | Select-Object -Property manufacturer -Unique | Out-GridView -PassThru -Title 'Select Manufacturer of Autopilot Devices to Update')
+                }
             }
             Write-Host ''
             Write-Host 'The following Autopilot Device Manufacturer(s) were selected:' -ForegroundColor Cyan
@@ -655,7 +758,12 @@ while ($autopilotUpdateDevices.Count -eq 0) {
         $confirmModels = 0
         while ($confirmModels -ne 1) {
             while ($autopilotModels.count -eq 0) {
-                $autopilotModels = @($autopilotDevices | Select-Object -Property model -Unique | Out-GridView -PassThru -Title 'Select Models of Autopilot Devices to Update')
+                if ($PSVersionTable.PSVersion.Major -eq 7) {
+                    $autopilotModels = @($autopilotDevices | Select-Object -Property model -Unique | Out-ConsoleGridView -Title 'Select Models of Autopilot Devices to Update' -OutputMode Multiple)
+                }
+                Else {
+                    $autopilotModels = @($autopilotDevices | Select-Object -Property model -Unique | Out-GridView -PassThru -Title 'Select Models of Autopilot Devices to Update')
+                }
             }
             Write-Host ''
             Write-Host 'The following Autopilot Device Model(s) were selected:' -ForegroundColor Cyan
@@ -676,7 +784,12 @@ while ($autopilotUpdateDevices.Count -eq 0) {
         $confirmPOs = 0
         while ($confirmPOs -ne 1) {
             while ($autopilotPOs.count -eq 0) {
-                $autopilotPOs = @($autopilotDevices | Select-Object -Property purchaseOrder -Unique | Out-GridView -PassThru -Title 'Select Purchase Order of Autopilot Devices to Update')
+                if ($PSVersionTable.PSVersion.Major -eq 7) {
+                    $autopilotPOs = @($autopilotDevices | Select-Object -Property purchaseOrder -Unique | Out-ConsoleGridView -Title 'Select Purchase Order of Autopilot Devices to Update' -OutputMode Multiple)
+                }
+                else {
+                    $autopilotPOs = @($autopilotDevices | Select-Object -Property purchaseOrder -Unique | Out-GridView -PassThru -Title 'Select Purchase Order of Autopilot Devices to Update')
+                }
             }
             Write-Host ''
             Write-Host 'The following Autopilot Device Purchase Order(s) were selected:' -ForegroundColor Cyan
@@ -694,7 +807,12 @@ while ($autopilotUpdateDevices.Count -eq 0) {
     }
     if ($choice -eq '7') {
         while ($autopilotUpdateDevices.count -eq 0) {
-            $autopilotUpdateDevices = @($autopilotDevices | Out-GridView -PassThru -Title 'Select Autopilot Devices to Update')
+            if ($PSVersionTable.PSVersion.Major -eq 7) {
+                $autopilotUpdateDevices = @($autopilotDevices | Out-ConsoleGridView -Title 'Select Autopilot Devices to Update' -OutputMode Multiple)
+            }
+            else {
+                $autopilotUpdateDevices = @($autopilotDevices | Out-GridView -PassThru -Title 'Select Autopilot Devices to Update')
+            }
         }
     }
     if ($choice -eq '8') {
@@ -724,14 +842,30 @@ while ($autopilotUpdateDevices.Count -eq 0) {
 
 #region group tag prompt
 if ($choice -ne '8') {
-    Write-Host ''
-    [string]$groupTagNew = Read-Host "Please enter the *NEW* group tag you wish to apply to the $($autopilotUpdateDevices.Count) Autopilot device(s)"
-    while ($groupTagNew -eq '' -or $null -eq $groupTagNew) {
-        [string]$groupTagNew = Read-Host "Please enter the *NEW* group tag you wish to apply to the $($autopilotUpdateDevices.Count) Autopilot device(s)"
-    }
     #group tags have a maximum of 512 characters
-    while ($groupTagNew.length -gt 512) {
-        [string]$groupTagNew = Read-Host "Please enter the *NEW* group tag you wish to apply to the $($autopilotUpdateDevices.Count) Autopilot device(s) but with less than 512 characters"
+    $confirmGroupTag = 0
+    while ($confirmGroupTag -ne 1) {
+        Write-Host 'Press Enter to select an empty Group Tag value which will remove the Group Tag from the Autopilot Device(s).' -ForegroundColor Yellow
+        Write-Host ''
+        [string]$groupTagNew = Read-Host "Please enter the *NEW* group tag you wish to apply to the $($autopilotUpdateDevices.Count) Autopilot device(s)"
+        while ($groupTagNew.length -gt 512) {
+            [string]$groupTagNew = Read-Host "Please enter the *NEW* group tag you wish to apply to the $($autopilotUpdateDevices.Count) Autopilot device(s) but with less than 512 characters"
+        }
+        Write-Host ''
+        Write-Host 'The following Autopilot Device Group Tag was entered:' -ForegroundColor Cyan
+        Write-Host ''
+        $groupTagNew
+        if ($groupTagNew -eq '' -or $null -eq $groupTagNew) {
+            Write-Host 'An empty Group Tag value will remove the Group Tag from the Autopilot Device(s).' -ForegroundColor red
+            Write-Host ''
+        }
+        $confirmGroupTag = Read-YesNoChoice -Title 'Please confirm the Autopilot Device Group Tag' -Message 'Is this the correct Group Tag to use?' -DefaultOption 1
+        if ($confirmGroupTag -eq 0) {
+            Write-Host ''
+            Write-Host 'Please re-enter a *NEW* Group Tag' -ForegroundColor Yellow
+            Write-Host ''
+            $groupTagNew = $null
+        }
     }
 }
 #endregion group tag prompt
@@ -756,7 +890,6 @@ $host.PrivateData.ProgressForegroundColor = 'green'
 Write-Progress -Activity $progressActivity -Status 'Starting' -PercentComplete 0
 
 foreach ($autopilotUpdateDevice in $autopilotUpdateDevices) {
-    $rndWait = Get-Random -Minimum 0 -Maximum 2
     Start-Sleep -Seconds $rndWait
     if ($choice -eq '8') {
         $groupTagNew = $($autopilotUpdateDevice.groupTag)
@@ -777,3 +910,72 @@ Write-Host ''
 Write-Progress -Activity $progressActivity -Status 'Complete' -PercentComplete 100
 Write-Host "Successfully updated $($autopilotUpdateDevices.Count) Autopilot device(s) with the new group tag(s)" -ForegroundColor Green
 #endregion group tag update
+
+#region Group Creation
+if ($createGroups) {
+    $groupTagsArray = @()
+    if ($choice -eq '8') {
+        foreach ($autopilotUpdateDevice in $autopilotUpdateDevices) {
+            $groupTagsArray += $($autopilotUpdateDevice.groupTag)
+        }
+    }
+    else {
+        $groupTagsArray += $groupTagNew
+    }
+    $groupTagsArray = $groupTagsArray | Select-Object -Unique
+    $groupsArray = @()
+    foreach ($groupTagArray in $groupTagsArray) {
+        $groupRule = "(device.devicePhysicalIds -any _ -eq `\`"[OrderID]:$groupTagArray`\`")"
+        $groupsArray += [pscustomobject]@{displayName = "$($groupPrefix + $groupTagArray)"; description = "All Autopilot Devices with Group Tag '$groupTagArray' created by AutopilotGroupTagger"; rule = "$groupRule" }
+    }
+    Write-Host ''
+    Write-Host "The following $($groupsArray.Count) group(s) will be created:" -ForegroundColor Yellow
+    Write-Host ''
+    $groupsArray | Select-Object -Property displayName, rule, description | Format-Table -AutoSize
+
+    Write-Warning -Message "You are about to create $($groupsArray.Count) new group(s) in Microsoft Entra ID. Please confirm you want to continue." -WarningAction Inquire
+
+    foreach ($group in $groupsArray) {
+        Start-Sleep -Seconds $rndWait
+        $groupName = $($group.displayName)
+        if ($groupName.length -gt 120) {
+            #shrinking group name to less than 120 characters
+            $groupName = $groupName[0..120] -join ''
+        }
+
+        if (!(Get-MDMGroup -groupName $groupName)) {
+            Write-Host ''
+            Write-Host "Creating Group $groupName with rule $($group.rule)" -ForegroundColor Cyan
+            $groupJSON = @"
+{
+    "description": "$($group.description)",
+    "displayName": "$groupName",
+    "groupTypes": [
+        "DynamicMembership"
+    ],
+    "mailEnabled": false,
+    "mailNickname": "$groupName",
+    "securityEnabled": true,
+    "membershipRule": "$($group.rule)",
+    "membershipRuleProcessingState": "On"
+}
+"@
+            if ($whatIf) {
+                Write-Host 'WhatIf mode enabled, no changes will be made.' -ForegroundColor Magenta
+                continue
+            }
+            else {
+                New-MDMGroup -JSON $groupJSON | Out-Null
+            }
+            Write-Host "Group $($group.displayName) created successfully." -ForegroundColor Green
+            Write-Host ''
+        }
+        else {
+            Write-Host "Group $($group.displayName) already exists, skipping creation." -ForegroundColor Yellow
+            Write-Host ''
+            continue
+        }
+    }
+    Write-Host "Successfully created $($groupsArray.Count) new group(s) in Microsoft Entra ID." -ForegroundColor Green
+}
+#endregion Group Creation
