@@ -22,9 +22,10 @@ Once authenticated select one of the options to start updating Group Tags to you
 - ❔ Update specific interactively selected Windows Autopilot Devices with a new Group Tag
 - 📔 Export Windows Autopilot Device data, and selectively update multiple devices with new Group Tags
 - 🛑 Remove existing Group Tags across all scenarios
+- 🛍 Option to create Dynamic Groups based on new Group Tags
 
 > [!NOTE]
-> Before the Group Tags are assigned or removed, you are prompted whether you want to continue.
+> Before the Group Tags are assigned or removed, or the groups created, you are prompted whether you want to continue.
 
 ## 🗒 Prerequisites
 
@@ -32,14 +33,15 @@ Once authenticated select one of the options to start updating Group Tags to you
 >
 > - Supports PowerShell 5 on Windows
 > - Supports PowerShell 7 on Windows and macOS
-> - `Microsoft.Graph.Authentication Module` should be installed, the script will detect and install if required.
-> - `Microsoft.PowerShell.ConsoleGuiTools` Module should be installed for PowerShell 7, the script will detect and install if required.
+> - `Microsoft.Graph.Authentication` module should be installed, the script will detect and install if required.
+> - `Microsoft.PowerShell.ConsoleGuiTools` module should be installed when using PowerShell 7, the script will detect and install if required.
 > - Entra ID App Registration with appropriate Graph Scopes or using Interactive Sign-In with a privileged account
 
 ## 🔄 Updates
 
 - **v0.5**
   - Allows for removal of Group Tags on Autopilot devices
+  - Option to create Dynamic Entra ID groups based on the Group Tags
   - Support for PowerShell 7 on macOS and Windows replacing `Out-GridView` with `Out-ConsoleGridView` as part of the `Microsoft.PowerShell.ConsoleGuiTools` module
 - v0.4.5
   - Resolved issues reported by `Invoke-ScriptAnalyzer`
@@ -85,6 +87,7 @@ OR
 
 Create an Entra ID App Registration with the following Graph API Application permissions:
 
+- `Group.ReadWrite.All`
 - `DeviceManagementServiceConfig.ReadWrite.All`
 - `Device.Read.All`
 - `DeviceManagementManagedDevices.Read.All`
@@ -96,6 +99,19 @@ Then run the script with the corresponding Entra ID Tenant ID, AppId and AppSecr
 ```powershell
 .\AutopilotGroupTagger.ps1 -tenantID '437e8ffb-3030-469a-99da-e5b527908099' -appId '799ebcfa-ca81-4e63-baaf-a35123164d78' -appSecret 'g708Q~uot4xo9dU_1TjGQIuUr0UyBHNZmY2mdcy6'
 ```
+
+### 🛍 Group Creation
+
+If you want the script to create dynamic groups based on the new Group Tags provided, include the switch parameter `createGroups`:
+
+```PowerShell
+.\AutopilotGroupTagger.ps1 -createGroups
+```
+
+This will allow for groups to be created with a prefix of **AGT-Autopilot-** followed by the Group Tag you specify, only if a group with the same name does not already exist.
+
+> [!NOTE]
+> If you want to change the Group name prefix update the `$groupPrefix` variable.
 
 ### ⁉ WhatIf Mode
 
@@ -109,6 +125,14 @@ If you want the script to just simulate the update of Group Tags use the `whatIf
 > This `whatIf` parameter will allow the simulation of the update of Group Tags, all other prompts will remain the same.
 
 ## 🎬 Demos
+
+### 🛍 PowerShell 5 Create Groups
+
+![AutoPilotGroupTagger](img/agt-demo-ps5-groups.gif)
+
+### 🛍 PowerShell 7 Create Groups
+
+![AutoPilotGroupTagger](img/agt-demo-ps7-groups.gif)
 
 ### 1️⃣ Update All Windows Autopilot Devices
 
@@ -132,7 +156,7 @@ If you want the script to just simulate the update of Group Tags use the `whatIf
 
 ### 6️⃣ Update Windows Autopilot Devices with specific Purchase Orders
 
-Demo Coming Soon
+Demo coming at some point, maybe.
 
 ### 7️⃣ Update specific interactively selected Windows Autopilot Devices
 

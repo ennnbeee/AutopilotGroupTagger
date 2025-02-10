@@ -22,7 +22,7 @@ v0.4.2 - Bug fixes and improvements
 v0.4.3 - Improvements to user interface and error handling
 v0.4.4 - Added 'WhatIf' mode, and updated user experience of output of the progress of Group Tag updates
 v0.4.5 - Function rework to support PowerShell gallery requirements
-v0.5 - Now supports PowerShell 7 on macOS and removal of Group Tags.
+v0.5 - Now supports PowerShell 7 on macOS, removal of Group Tags, and Dynamic Group creation
 
 .PRIVATEDATA
 #>
@@ -37,6 +37,9 @@ The script will connect to the Microsoft Graph API and retrieve all Autopilot de
 
 .PARAMETER whatIf
 Switch to enable WhatIf mode to simulate changes.
+
+.PARAMETER createGroups
+Switch to enable the creation of dynamic groups based on Group Tags.
 
 .PARAMETER tenantId
 Provide the Id of the Entra ID tenant to connect to.
@@ -70,6 +73,9 @@ Creation Date:  10/02/2025
 
 param(
 
+    [Parameter(Mandatory = $false, HelpMessage = 'Switch to enable the creation of dynamic groups based on Group Tags')]
+    [switch]$createGroups,
+
     [Parameter(Mandatory = $false, HelpMessage = 'Provide the Id of the Entra ID tenant to connect to')]
     [ValidateLength(36, 36)]
     [String]$tenantId,
@@ -88,6 +94,27 @@ param(
 )
 
 #region Functions
+Function Test-JSON() {
+
+    param (
+        $JSON
+    )
+
+    try {
+        $TestJSON = ConvertFrom-Json $JSON -ErrorAction Stop
+        $TestJSON | Out-Null
+        $validJson = $true
+    }
+    catch {
+        $validJson = $false
+        $_.Exception
+    }
+    if (!$validJson) {
+        Write-Host "Provided JSON isn't in valid JSON format" -ForegroundColor Red
+        break
+    }
+
+}
 Function Connect-ToGraph {
     <#
 .SYNOPSIS
@@ -368,6 +395,52 @@ Function Get-ManagedDevice() {
         break
     }
 }
+Function Get-MDMGroup() {
+
+    [cmdletbinding()]
+
+    param
+    (
+        [parameter(Mandatory = $true)]
+        [string]$groupName
+    )
+
+    $graphApiVersion = 'beta'
+    $Resource = 'groups'
+
+    try {
+        $searchTerm = 'search="displayName:' + $groupName + '"'
+        $uri = "https://graph.microsoft.com/$graphApiVersion/$Resource`?$searchTerm"
+        (Invoke-MgGraphRequest -Uri $uri -Method Get -Headers @{ConsistencyLevel = 'eventual' }).Value
+    }
+    catch {
+        Write-Error $_.Exception.Message
+        break
+    }
+}
+Function New-MDMGroup() {
+
+    [cmdletbinding()]
+
+    param
+    (
+        [Parameter(Mandatory = $true)]
+        $JSON
+    )
+
+    $graphApiVersion = 'beta'
+    $Resource = 'groups'
+
+    try {
+        Test-Json -Json $JSON
+        $uri = "https://graph.microsoft.com/$graphApiVersion/$($Resource)"
+        Invoke-MgGraphRequest -Uri $uri -Method Post -Body $JSON -ContentType 'application/json'
+    }
+    catch {
+        Write-Error $_.Exception.Message
+        break
+    }
+}
 Function Read-YesNoChoice {
     <#
         .SYNOPSIS
@@ -453,8 +526,10 @@ Write-Host ''
 #endregion intro
 
 #region variables
-$requiredScopes = @('Device.Read.All', 'DeviceManagementServiceConfig.ReadWrite.All', 'DeviceManagementManagedDevices.Read.All')
+$groupPrefix = 'AGT-Autopilot-'
+$requiredScopes = @('Device.Read.All', 'DeviceManagementServiceConfig.ReadWrite.All', 'DeviceManagementManagedDevices.Read.All', 'Group.ReadWrite.All')
 [String[]]$scopes = $requiredScopes -join ', '
+$rndWait = Get-Random -Minimum 1 -Maximum 2
 #endregion variables
 
 #region module check
@@ -575,6 +650,10 @@ while ($autopilotUpdateDevices.Count -eq 0) {
     if ($whatIf) {
         Write-Host ''
         Write-Host 'WhatIf mode enabled, no changes will be made.' -ForegroundColor Magenta
+    }
+    if ($createGroups) {
+        Write-Host ''
+        Write-Host 'Dynamic Groups will be created based on Group Tags' -ForegroundColor Magenta
     }
     Write-Host ''
     Write-Host 'Please Choose one of the Group Tag options below: ' -ForegroundColor Magenta
@@ -766,7 +845,7 @@ if ($choice -ne '8') {
     #group tags have a maximum of 512 characters
     $confirmGroupTag = 0
     while ($confirmGroupTag -ne 1) {
-        Write-Host 'Press Enter to select an empty Group Tag value which will remove the Group Tag from the Autopilot Device(s).' -ForegroundColor Cyan
+        Write-Host 'Press Enter to select an empty Group Tag value which will remove the Group Tag from the Autopilot Device(s).' -ForegroundColor Yellow
         Write-Host ''
         [string]$groupTagNew = Read-Host "Please enter the *NEW* group tag you wish to apply to the $($autopilotUpdateDevices.Count) Autopilot device(s)"
         while ($groupTagNew.length -gt 512) {
@@ -811,7 +890,6 @@ $host.PrivateData.ProgressForegroundColor = 'green'
 Write-Progress -Activity $progressActivity -Status 'Starting' -PercentComplete 0
 
 foreach ($autopilotUpdateDevice in $autopilotUpdateDevices) {
-    $rndWait = Get-Random -Minimum 1 -Maximum 2
     Start-Sleep -Seconds $rndWait
     if ($choice -eq '8') {
         $groupTagNew = $($autopilotUpdateDevice.groupTag)
@@ -832,3 +910,72 @@ Write-Host ''
 Write-Progress -Activity $progressActivity -Status 'Complete' -PercentComplete 100
 Write-Host "Successfully updated $($autopilotUpdateDevices.Count) Autopilot device(s) with the new group tag(s)" -ForegroundColor Green
 #endregion group tag update
+
+#region Group Creation
+if ($createGroups) {
+    $groupTagsArray = @()
+    if ($choice -eq '8') {
+        foreach ($autopilotUpdateDevice in $autopilotUpdateDevices) {
+            $groupTagsArray += $($autopilotUpdateDevice.groupTag)
+        }
+    }
+    else {
+        $groupTagsArray += $groupTagNew
+    }
+    $groupTagsArray = $groupTagsArray | Select-Object -Unique
+    $groupsArray = @()
+    foreach ($groupTagArray in $groupTagsArray) {
+        $groupRule = "(device.devicePhysicalIds -any _ -eq `\`"[OrderID]:$groupTagArray`\`")"
+        $groupsArray += [pscustomobject]@{displayName = "$($groupPrefix + $groupTagArray)"; description = "All Autopilot Devices with Group Tag '$groupTagArray' created by AutopilotGroupTagger"; rule = "$groupRule" }
+    }
+    Write-Host ''
+    Write-Host "The following $($groupsArray.Count) group(s) will be created:" -ForegroundColor Yellow
+    Write-Host ''
+    $groupsArray | Select-Object -Property displayName, rule, description | Format-Table -AutoSize
+
+    Write-Warning -Message "You are about to create $($groupsArray.Count) new group(s) in Microsoft Entra ID. Please confirm you want to continue." -WarningAction Inquire
+
+    foreach ($group in $groupsArray) {
+        Start-Sleep -Seconds $rndWait
+        $groupName = $($group.displayName)
+        if ($groupName.length -gt 120) {
+            #shrinking group name to less than 120 characters
+            $groupName = $groupName[0..120] -join ''
+        }
+
+        if (!(Get-MDMGroup -groupName $groupName)) {
+            Write-Host ''
+            Write-Host "Creating Group $groupName with rule $($group.rule)" -ForegroundColor Cyan
+            $groupJSON = @"
+{
+    "description": "$($group.description)",
+    "displayName": "$groupName",
+    "groupTypes": [
+        "DynamicMembership"
+    ],
+    "mailEnabled": false,
+    "mailNickname": "$groupName",
+    "securityEnabled": true,
+    "membershipRule": "$($group.rule)",
+    "membershipRuleProcessingState": "On"
+}
+"@
+            if ($whatIf) {
+                Write-Host 'WhatIf mode enabled, no changes will be made.' -ForegroundColor Magenta
+                continue
+            }
+            else {
+                New-MDMGroup -JSON $groupJSON | Out-Null
+            }
+            Write-Host "Group $($group.displayName) created successfully." -ForegroundColor Green
+            Write-Host ''
+        }
+        else {
+            Write-Host "Group $($group.displayName) already exists, skipping creation." -ForegroundColor Yellow
+            Write-Host ''
+            continue
+        }
+    }
+    Write-Host "Successfully created $($groupsArray.Count) new group(s) in Microsoft Entra ID." -ForegroundColor Green
+}
+#endregion Group Creation
