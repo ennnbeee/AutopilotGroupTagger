@@ -69,7 +69,11 @@ Once authenticated select one of the options to start updating Group Tags to you
 
 ## ⏯ Usage
 
-Download the script: AutopilotGroupTagger.ps1
+Install the script from the [PowerShell Gallery](https://www.powershellgallery.com/packages/AutopilotGroupTagger)
+
+```PowerShell
+Install-Script -Name AutopilotGroupTagger
+```
 
 Running the script without any parameters for interactive authentication:
 
