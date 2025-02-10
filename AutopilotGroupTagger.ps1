@@ -5,7 +5,7 @@
 .AUTHOR Nick Benton
 .COMPANYNAME
 .COPYRIGHT GPL
-.TAGS = 'Graph','Intune',Windows','Autopilot','Group Tags'
+.TAGS Graph Intune Windows Autopilot GroupTags
 .LICENSEURI https://github.com/ennnbeee/AutopilotGroupTagger/blob/main/LICENSE
 .PROJECTURI https://github.com/ennnbeee/AutopilotGroupTagger
 .ICONURI https://raw.githubusercontent.com/ennnbeee/AutopilotGroupTagger/refs/heads/main/img/agt-icon.png
@@ -22,7 +22,7 @@ v0.4.2 - Bug fixes and improvements
 v0.4.3 - Improvements to user interface and error handling
 v0.4.4 - Added 'WhatIf' mode, and updated user experience of output of the progress of Group Tag updates
 v0.4.5 - Function rework to support PowerShell gallery requirements
-v0.5 - Added use of Out-ConsoleGridView for interactive selection of devices using module Microsoft.PowerShell.ConsoleGuiTools
+v0.5 - Now supports PowerShell 7 on macOS and removal of Group Tags.
 
 .PRIVATEDATA
 #>
@@ -63,7 +63,7 @@ App Authentication
 Version:        0.5
 Author:         Nick Benton
 WWW:            oddsandendpoints.co.uk
-Creation Date:  07/02/2025
+Creation Date:  10/02/2025
 #>
 
 [CmdletBinding(DefaultParameterSetName = 'Default')]
@@ -446,7 +446,7 @@ Write-Host '
 Write-Host 'Autopilot GroupTagger - Update Autopilot Device Group Tags in bulk.' -ForegroundColor Green
 Write-Host 'Nick Benton - oddsandendpoints.co.uk' -NoNewline;
 Write-Host ' | Version' -NoNewline; Write-Host ' 0.5 Public Preview' -ForegroundColor Yellow -NoNewline
-Write-Host ' | Last updated: ' -NoNewline; Write-Host '2025-02-07' -ForegroundColor Magenta
+Write-Host ' | Last updated: ' -NoNewline; Write-Host '2025-02-10' -ForegroundColor Magenta
 Write-Host ''
 Write-Host 'If you have any feedback, please open an issue at https://github.com/ennnbeee/AutopilotGroupTagger/issues' -ForegroundColor Cyan
 Write-Host ''
@@ -458,7 +458,12 @@ $requiredScopes = @('Device.Read.All', 'DeviceManagementServiceConfig.ReadWrite.
 #endregion variables
 
 #region module check
-$modules = @('Microsoft.Graph.Authentication', 'Microsoft.PowerShell.ConsoleGuiTools')
+if ($PSVersionTable.PSVersion.Major -eq 7) {
+    $modules = @('Microsoft.Graph.Authentication', 'Microsoft.PowerShell.ConsoleGuiTools')
+}
+else {
+    $modules = @('Microsoft.Graph.Authentication')
+}
 foreach ($module in $modules) {
     Write-Host "Checking for $module PowerShell module..." -ForegroundColor Cyan
     Write-Host ''
@@ -622,8 +627,12 @@ while ($autopilotUpdateDevices.Count -eq 0) {
         $confirmGroupTags = 0
         while ($confirmGroupTags -ne 1) {
             while ($autopilotGroupTags.count -eq 0) {
-                #$autopilotGroupTags = @($autopilotDevices | Select-Object -Property groupTag -Unique | Out-GridView -PassThru -Title 'Select GroupTags of Autopilot Devices to Update')
-                $autopilotGroupTags = @($autopilotDevices | Select-Object -Property groupTag -Unique | Out-ConsoleGridView -Title 'Select GroupTags of Autopilot Devices to Update' -OutputMode Multiple)
+                if ($PSVersionTable.PSVersion.Major -eq 7) {
+                    $autopilotGroupTags = @($autopilotDevices | Select-Object -Property groupTag -Unique | Out-ConsoleGridView -Title 'Select GroupTags of Autopilot Devices to Update' -OutputMode Multiple)
+                }
+                else {
+                    $autopilotGroupTags = @($autopilotDevices | Select-Object -Property groupTag -Unique | Out-GridView -PassThru -Title 'Select GroupTags of Autopilot Devices to Update')
+                }
             }
             Write-Host ''
             Write-Host 'The following Group Tag(s) were selected:' -ForegroundColor Cyan
@@ -644,8 +653,12 @@ while ($autopilotUpdateDevices.Count -eq 0) {
         $confirmManufacturers = 0
         while ($confirmManufacturers -ne 1) {
             while ($autopilotManufacturers.count -eq 0) {
-                #$autopilotManufacturers = @($autopilotDevices | Select-Object -Property manufacturer -Unique | Out-GridView -PassThru -Title 'Select Manufacturer of Autopilot Devices to Update')
-                $autopilotManufacturers = @($autopilotDevices | Select-Object -Property manufacturer -Unique | Out-ConsoleGridView -Title 'Select Manufacturer of Autopilot Devices to Update' -OutputMode Multiple)
+                if ($PSVersionTable.PSVersion.Major -eq 7) {
+                    $autopilotManufacturers = @($autopilotDevices | Select-Object -Property manufacturer -Unique | Out-ConsoleGridView -Title 'Select Manufacturer of Autopilot Devices to Update' -OutputMode Multiple)
+                }
+                Else {
+                    $autopilotManufacturers = @($autopilotDevices | Select-Object -Property manufacturer -Unique | Out-GridView -PassThru -Title 'Select Manufacturer of Autopilot Devices to Update')
+                }
             }
             Write-Host ''
             Write-Host 'The following Autopilot Device Manufacturer(s) were selected:' -ForegroundColor Cyan
@@ -666,8 +679,12 @@ while ($autopilotUpdateDevices.Count -eq 0) {
         $confirmModels = 0
         while ($confirmModels -ne 1) {
             while ($autopilotModels.count -eq 0) {
-                #$autopilotModels = @($autopilotDevices | Select-Object -Property model -Unique | Out-GridView -PassThru -Title 'Select Models of Autopilot Devices to Update')
-                $autopilotModels = @($autopilotDevices | Select-Object -Property model -Unique | Out-ConsoleGridView -Title 'Select Models of Autopilot Devices to Update' -OutputMode Multiple)
+                if ($PSVersionTable.PSVersion.Major -eq 7) {
+                    $autopilotModels = @($autopilotDevices | Select-Object -Property model -Unique | Out-ConsoleGridView -Title 'Select Models of Autopilot Devices to Update' -OutputMode Multiple)
+                }
+                Else {
+                    $autopilotModels = @($autopilotDevices | Select-Object -Property model -Unique | Out-GridView -PassThru -Title 'Select Models of Autopilot Devices to Update')
+                }
             }
             Write-Host ''
             Write-Host 'The following Autopilot Device Model(s) were selected:' -ForegroundColor Cyan
@@ -688,8 +705,12 @@ while ($autopilotUpdateDevices.Count -eq 0) {
         $confirmPOs = 0
         while ($confirmPOs -ne 1) {
             while ($autopilotPOs.count -eq 0) {
-                #$autopilotPOs = @($autopilotDevices | Select-Object -Property purchaseOrder -Unique | Out-GridView -PassThru -Title 'Select Purchase Order of Autopilot Devices to Update')
-                $autopilotPOs = @($autopilotDevices | Select-Object -Property purchaseOrder -Unique | Out-ConsoleGridView -Title 'Select Purchase Order of Autopilot Devices to Update' -OutputMode Multiple)
+                if ($PSVersionTable.PSVersion.Major -eq 7) {
+                    $autopilotPOs = @($autopilotDevices | Select-Object -Property purchaseOrder -Unique | Out-ConsoleGridView -Title 'Select Purchase Order of Autopilot Devices to Update' -OutputMode Multiple)
+                }
+                else {
+                    $autopilotPOs = @($autopilotDevices | Select-Object -Property purchaseOrder -Unique | Out-GridView -PassThru -Title 'Select Purchase Order of Autopilot Devices to Update')
+                }
             }
             Write-Host ''
             Write-Host 'The following Autopilot Device Purchase Order(s) were selected:' -ForegroundColor Cyan
@@ -707,8 +728,12 @@ while ($autopilotUpdateDevices.Count -eq 0) {
     }
     if ($choice -eq '7') {
         while ($autopilotUpdateDevices.count -eq 0) {
-            #$autopilotUpdateDevices = @($autopilotDevices | Out-GridView -PassThru -Title 'Select Autopilot Devices to Update')
-            $autopilotUpdateDevices = @($autopilotDevices | Out-ConsoleGridView -Title 'Select Autopilot Devices to Update' -OutputMode Multiple)
+            if ($PSVersionTable.PSVersion.Major -eq 7) {
+                $autopilotUpdateDevices = @($autopilotDevices | Out-ConsoleGridView -Title 'Select Autopilot Devices to Update' -OutputMode Multiple)
+            }
+            else {
+                $autopilotUpdateDevices = @($autopilotDevices | Out-GridView -PassThru -Title 'Select Autopilot Devices to Update')
+            }
         }
     }
     if ($choice -eq '8') {
@@ -738,14 +763,30 @@ while ($autopilotUpdateDevices.Count -eq 0) {
 
 #region group tag prompt
 if ($choice -ne '8') {
-    Write-Host ''
-    [string]$groupTagNew = Read-Host "Please enter the *NEW* group tag you wish to apply to the $($autopilotUpdateDevices.Count) Autopilot device(s)"
-    while ($groupTagNew -eq '' -or $null -eq $groupTagNew) {
-        [string]$groupTagNew = Read-Host "Please enter the *NEW* group tag you wish to apply to the $($autopilotUpdateDevices.Count) Autopilot device(s)"
-    }
     #group tags have a maximum of 512 characters
-    while ($groupTagNew.length -gt 512) {
-        [string]$groupTagNew = Read-Host "Please enter the *NEW* group tag you wish to apply to the $($autopilotUpdateDevices.Count) Autopilot device(s) but with less than 512 characters"
+    $confirmGroupTag = 0
+    while ($confirmGroupTag -ne 1) {
+        Write-Host 'Press Enter to select an empty Group Tag value which will remove the Group Tag from the Autopilot Device(s).' -ForegroundColor Cyan
+        Write-Host ''
+        [string]$groupTagNew = Read-Host "Please enter the *NEW* group tag you wish to apply to the $($autopilotUpdateDevices.Count) Autopilot device(s)"
+        while ($groupTagNew.length -gt 512) {
+            [string]$groupTagNew = Read-Host "Please enter the *NEW* group tag you wish to apply to the $($autopilotUpdateDevices.Count) Autopilot device(s) but with less than 512 characters"
+        }
+        Write-Host ''
+        Write-Host 'The following Autopilot Device Group Tag was entered:' -ForegroundColor Cyan
+        Write-Host ''
+        $groupTagNew
+        if ($groupTagNew -eq '' -or $null -eq $groupTagNew) {
+            Write-Host 'An empty Group Tag value will remove the Group Tag from the Autopilot Device(s).' -ForegroundColor red
+            Write-Host ''
+        }
+        $confirmGroupTag = Read-YesNoChoice -Title 'Please confirm the Autopilot Device Group Tag' -Message 'Is this the correct Group Tag to use?' -DefaultOption 1
+        if ($confirmGroupTag -eq 0) {
+            Write-Host ''
+            Write-Host 'Please re-enter a *NEW* Group Tag' -ForegroundColor Yellow
+            Write-Host ''
+            $groupTagNew = $null
+        }
     }
 }
 #endregion group tag prompt

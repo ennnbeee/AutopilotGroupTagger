@@ -11,34 +11,38 @@ AutopilotGroupTagger is currently in Public Preview, meaning that although the i
 
 ## 🌟 Features
 
-Once authenticated select one of the options to start applying Group Tags to your Autopilot Devices:
+Once authenticated select one of the options to start updating Group Tags to your Autopilot Devices:
 
-- 🖥 Update **All Windows Autopilot Devices** with a new Group Tag
-- ❌ Update Windows Autopilot Devices with **an empty Group Tag** with a new Group Tag
-- 🏷 Update Windows Autopilot Devices with **specific existing Group Tags** with a new Group Tag
-- 🏢 Update **specific manufacturers** of Windows Autopilot Devices with a new Group Tag
-- 🏠 Update **specific models** of Windows Autopilot Devices with a new Group Tag
-- 💰 Update Windows Autopilot Devices with **specific Purchase Orders** with a new Group Tag
-- ❔ Update **specific interactively selected** Windows Autopilot Devices with a new Group Tag
-- 📔 Export Windows Autopilot Device data, and **selectively update** multiple devices with new Group Tags
-- 😅 Exit the script before you cause yourself some problems
+- 🖥 Update all Windows Autopilot Devices with a new Group Tag
+- ❌ Update Windows Autopilot Devices with an empty Group Tag with a new Group Tag
+- 🏷 Update Windows Autopilot Devices with specific existing Group Tags with a new Group Tag
+- 🏢 Update specific manufacturers of Windows Autopilot Devices with a new Group Tag
+- 🏠 Update specific models of Windows Autopilot Devices with a new Group Tag
+- 💰 Update Windows Autopilot Devices with specific Purchase Orders with a new Group Tag
+- ❔ Update specific interactively selected Windows Autopilot Devices with a new Group Tag
+- 📔 Export Windows Autopilot Device data, and selectively update multiple devices with new Group Tags
+- 🛑 Remove existing Group Tags across all scenarios
 
 > [!NOTE]
-> Before the Group Tags are assigned, you are prompted whether you want to continue.
+> Before the Group Tags are assigned or removed, you are prompted whether you want to continue.
 
 ## 🗒 Prerequisites
 
 > [!IMPORTANT]
 >
-> - Tested on PowerShell 5 and PowerShell 7
-> - Microsoft.Graph.Authentication Module should be installed, the script will detect and install if required.
+> - Supports PowerShell 5 on Windows
+> - Supports PowerShell 7 on Windows and macOS
+> - `Microsoft.Graph.Authentication Module` should be installed, the script will detect and install if required.
+> - `Microsoft.PowerShell.ConsoleGuiTools` Module should be installed for PowerShell 7, the script will detect and install if required.
 > - Entra ID App Registration with appropriate Graph Scopes or using Interactive Sign-In with a privileged account
-> - Windows Operating System
 
 ## 🔄 Updates
 
-- **v0.4.5**
-  - Resolved issues reported by `Invoke-ScriptAnalyze`
+- **v0.5**
+  - Allows for removal of Group Tags on Autopilot devices
+  - Support for PowerShell 7 on macOS and Windows replacing `Out-GridView` with `Out-ConsoleGridView` as part of the `Microsoft.PowerShell.ConsoleGuiTools` module
+- v0.4.5
+  - Resolved issues reported by `Invoke-ScriptAnalyzer`
 - v0.4.4
   - Include a `whatIf` parameter to simulate changes
   - Updated user experience of output of the progress of Group Tag updates
