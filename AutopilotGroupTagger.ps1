@@ -67,7 +67,7 @@ App Authentication
 Version:        0.6
 Author:         Nick Benton
 WWW:            oddsandendpoints.co.uk
-Creation Date:  03/07/2025
+Creation Date:  04/07/2025
 #>
 
 [CmdletBinding(DefaultParameterSetName = 'Default')]
@@ -530,10 +530,10 @@ Write-Host '
                           |__|                  |_____|_____|
 ' -ForegroundColor Red
 
-Write-Host 'Autopilot GroupTagger - Update Autopilot Device Group Tags in bulk.' -ForegroundColor Green
+Write-Host 'Autopilot GroupTagger - Update Autopilot devices in bulk.' -ForegroundColor Green
 Write-Host 'Nick Benton - oddsandendpoints.co.uk' -NoNewline;
 Write-Host ' | Version' -NoNewline; Write-Host ' 0.6 Public Preview' -ForegroundColor Yellow -NoNewline
-Write-Host ' | Last updated: ' -NoNewline; Write-Host '2025-03-07' -ForegroundColor Magenta
+Write-Host ' | Last updated: ' -NoNewline; Write-Host '2025-07-04' -ForegroundColor Magenta
 Write-Host ''
 Write-Host 'If you have any feedback, please open an issue at https://github.com/ennnbeee/AutopilotGroupTagger/issues' -ForegroundColor Cyan
 Write-Host ''

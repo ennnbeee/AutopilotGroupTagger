@@ -1,6 +1,6 @@
 # 🏷 AutopilotGroupTagger
 
-AutoPilotGroupTagger is a PowerShell based utility that allows for bulk update and management of Windows Autopilot Device Group Tags, for those who are either retrospectively updating Autopilot devices or otherwise.
+AutoPilotGroupTagger is a PowerShell based utility that allows for bulk update and management of Windows Autopilot Device Group Tags, or unblocking of Autopilot devices, for those who are either retrospectively updating Autopilot devices or otherwise.
 
 ## ⚠ Public Preview Notice
 
@@ -16,17 +16,24 @@ AutopilotGroupTagger is currently in Public Preview, meaning that although the i
 
 ## 🌟 Features
 
-Once authenticated select one of the options to start updating Group Tags to your Autopilot Devices:
+Once authenticated select one of the options to start updating Group Tags to your Autopilot devices:
 
-- 🖥 Update all Windows Autopilot Devices with a new Group Tag
-- ❌ Update Windows Autopilot Devices with an empty Group Tag with a new Group Tag
-- 🏷 Update Windows Autopilot Devices with specific existing Group Tags with a new Group Tag
-- 🏢 Update specific manufacturers of Windows Autopilot Devices with a new Group Tag
-- 🏠 Update specific models of Windows Autopilot Devices with a new Group Tag
-- 💰 Update Windows Autopilot Devices with specific Purchase Orders with a new Group Tag
-- ❔ Update specific interactively selected Windows Autopilot Devices with a new Group Tag
+- 🖥 Update all Windows Autopilot devices with a new Group Tag
+- ❌ Update Windows Autopilot devices with an empty Group Tag with a new Group Tag
+- 🏷 Update Windows Autopilot devices with specific existing Group Tags with a new Group Tag
+- 🏢 Update specific manufacturers of Windows Autopilot devices with a new Group Tag
+- 🏠 Update specific models of Windows Autopilot devices with a new Group Tag
+- 💰 Update Windows Autopilot devices with specific Purchase Orders with a new Group Tag
+- ❔ Update specific interactively selected Windows Autopilot devices with a new Group Tag
 - 📔 Export Windows Autopilot Device data, and selectively update multiple devices with new Group Tags
 - 🛑 Remove existing Group Tags across all scenarios
+
+Also options to [unblock](https://learn.microsoft.com/en-us/autopilot/whats-new#how-to-unblock-devices) Autopilot devices:
+
+- 🖥 Unblock all Windows Autopilot devices
+- ❌ Unblock all blocked Windows Autopilot devices
+- 🏢 Unblock specific manufacturers of Windows Autopilot devices
+- 🏠 Unblock specific models of Windows Autopilot devices
 
 > [!NOTE]
 > Before the Group Tags are assigned or removed, or the groups created, you are prompted whether you want to continue.
@@ -43,7 +50,9 @@ Once authenticated select one of the options to start updating Group Tags to you
 
 ## 🔄 Updates
 
-- **v0.5**
+- **v0.6**
+  - New functionality to allow for unblocking of Autopilot devices
+- v0.5
   - Allows for removal of Group Tags on Autopilot devices
   - Option to create Dynamic Entra ID groups based on the Group Tags
   - Support for PowerShell 7 on macOS and Windows replacing `Out-GridView` with `Out-ConsoleGridView` as part of the `Microsoft.PowerShell.ConsoleGuiTools` module
@@ -132,37 +141,53 @@ If you want the script to just simulate the update of Group Tags use the `whatIf
 
 ![AutoPilotGroupTagger](img/agt-demo-ps7-groups.gif)
 
-### 1️⃣ Update All Windows Autopilot Devices
+### 1️⃣ Update All Windows Autopilot devices
 
 ![AutoPilotGroupTagger](img/agt-demo-alldevices.gif)
 
-### 2️⃣ Update Windows Autopilot Devices with an empty Group Tag
+### 2️⃣ Update Windows Autopilot devices with an empty Group Tag
 
 ![AutoPilotGroupTagger](img/agt-demo-allempty.gif)
 
-### 3️⃣ Update Windows Autopilot Devices with specific existing Group Tags
+### 3️⃣ Update Windows Autopilot devices with specific existing Group Tags
 
 ![AutoPilotGroupTagger](img/agt-demo-tags.gif)
 
-### 4️⃣ Update specific manufacturers of Windows Autopilot Devices
+### 4️⃣ Update specific manufacturers of Windows Autopilot devices
 
 ![AutoPilotGroupTagger](img/agt-demo-makes.gif)
 
-### 5️⃣ Update specific models of Windows Autopilot Devices
+### 5️⃣ Update specific models of Windows Autopilot devices
 
 ![AutoPilotGroupTagger](img/agt-demo-models.gif)
 
-### 6️⃣ Update Windows Autopilot Devices with specific Purchase Orders
+### 6️⃣ Update Windows Autopilot devices with specific Purchase Orders
 
 Demo coming at some point, maybe.
 
-### 7️⃣ Update specific interactively selected Windows Autopilot Devices
+### 7️⃣ Update specific interactively selected Windows Autopilot devices
 
 ![AutoPilotGroupTagger](img/agt-demo-specific.gif)
 
 ### 8️⃣ Export Windows Autopilot Device data, and selectively update multiple devices
 
 ![AutoPilotGroupTagger](img/agt-demo-report.gif)
+
+### 🅰 Unblock All Windows Autopilot devices
+
+Demo coming at some point, maybe.
+
+### 🅱 Unblock blocked Windows Autopilot devices
+
+Demo coming at some point, maybe.
+
+### 🌊 Unblock specific manufacturers of Windows Autopilot devices
+
+Demo coming at some point, maybe.
+
+### 🍆 Unblock specific models of Windows Autopilot devices
+
+Demo coming at some point, maybe.
 
 ## 🚑 Support
 
