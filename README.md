@@ -2,6 +2,8 @@
 
 AutoPilotGroupTagger is a PowerShell based utility that allows for bulk update and management of Windows Autopilot Device Group Tags, or unblocking of Autopilot devices, for those who are either retrospectively updating Autopilot devices or otherwise.
 
+This script is a part of the [MEM Official Community Tool](https://www.memcommunity.com/official-community-tool-oct)
+
 ## ⚠ Public Preview Notice
 
 AutopilotGroupTagger is currently in Public Preview, meaning that although the it is functional, you may encounter issues or bugs with the script.
@@ -50,7 +52,10 @@ Also options to [unblock](https://learn.microsoft.com/en-us/autopilot/whats-new#
 
 ## 🔄 Updates
 
-- **v0.6**
+- **v0.7**
+  - Updated to allow for re-running of the script
+  - Bug fixes
+- v0.6
   - New functionality to allow for unblocking of Autopilot devices
 - v0.5
   - Allows for removal of Group Tags on Autopilot devices
