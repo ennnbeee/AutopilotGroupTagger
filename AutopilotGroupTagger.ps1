@@ -1,6 +1,6 @@
 <#PSScriptInfo
 
-.VERSION 0.7
+.VERSION 0.7.0
 .GUID 63c8809e-5c8a-4ddc-82a4-29706992802f
 .AUTHOR Nick Benton
 .COMPANYNAME
@@ -13,18 +13,18 @@
 .REQUIREDSCRIPTS
 .EXTERNALSCRIPTDEPENDENCIES
 .RELEASENOTES
-v0.1 - Initial release
-v0.2 - Included functionality to update group tags based on Purchase order
-v0.3 - Updated logic around Autopilot device selection
-v0.4 - Configured to run on PowerShell 5
-v0.4.1 - Updated authentication and module detection
-v0.4.2 - Bug fixes and improvements
-v0.4.3 - Improvements to user interface and error handling
-v0.4.4 - Added 'WhatIf' mode, and updated user experience of output of the progress of Group Tag updates
+v0.7.0 - Updated to support re-running of the script and other bug fixes
+v0.6.0 - Supports unblocking of Autopilot devices
+v0.5.0 - Now supports PowerShell 7 on macOS, removal of Group Tags, and Dynamic Group creation
 v0.4.5 - Function rework to support PowerShell gallery requirements
-v0.5 - Now supports PowerShell 7 on macOS, removal of Group Tags, and Dynamic Group creation
-v0.6 - Supports unblocking of Autopilot devices
-v0.7 - Updated to support re-running of the script and other bug fixes
+v0.4.4 - Added 'WhatIf' mode, and updated user experience of output of the progress of Group Tag updates
+v0.4.3 - Improvements to user interface and error handling
+v0.4.2 - Bug fixes and improvements
+v0.4.1 - Updated authentication and module detection
+v0.4.0 - Configured to run on PowerShell 5
+v0.3.0 - Updated logic around Autopilot device selection
+v0.2.0 - Included functionality to update group tags based on Purchase order
+v0.1.0 - Initial release
 
 .PRIVATEDATA
 #>
@@ -64,11 +64,6 @@ Pass through Authentication
 App Authentication
 .\AutopilotGroupTagger.ps1 -tenantId '437e8ffb-3030-469a-99da-e5b527908099' -appId '799ebcfa-ca81-4e72-baaf-a35126464d67' -appSecret 'g708Q~uof4xo9dU_1EjGQIuUr0UyBHNZmY2mcdy6'
 
-.NOTES
-Version:        0.6
-Author:         Nick Benton
-WWW:            oddsandendpoints.co.uk
-Creation Date:  04/07/2025
 #>
 
 [CmdletBinding(DefaultParameterSetName = 'Default')]
@@ -615,9 +610,8 @@ Write-Host '
 Write-Host 'AutopilotGroupTagger - Update Autopilot devices in bulk.' -ForegroundColor Green
 Write-Host 'Nick Benton - oddsandendpoints.co.uk' -NoNewline;
 Write-Host ' | Version' -NoNewline; Write-Host ' 0.7 Public Preview' -ForegroundColor Yellow -NoNewline
-Write-Host ' | Last updated: ' -NoNewline; Write-Host '2025-09-08' -ForegroundColor Magenta
-Write-Host ''
-Write-Host 'If you have any feedback, please open an issue at https://github.com/ennnbeee/AutopilotGroupTagger/issues' -ForegroundColor Cyan
+Write-Host ' | Last updated: ' -NoNewline; Write-Host '2025-09-09' -ForegroundColor Magenta
+Write-Host "`nIf you have any feedback, please open an issue at https://github.com/ennnbeee/AutopilotGroupTagger/issues" -ForegroundColor Cyan
 Write-Host ''
 #endregion intro
 
@@ -638,12 +632,10 @@ else {
 }
 foreach ($module in $modules) {
     Write-Host "Checking for $module PowerShell module..." -ForegroundColor Cyan
-    Write-Host ''
     if (!(Get-Module -Name $module -ListAvailable)) {
         Install-Module -Name $module -Scope CurrentUser -AllowClobber
     }
-    Write-Host "PowerShell Module $module found." -ForegroundColor Green
-    Write-Host ''
+    Write-Host "`nPowerShell Module $module found." -ForegroundColor Green
     if (!([System.AppDomain]::CurrentDomain.GetAssemblies() | Where-Object FullName -Like "*$module*")) {
         Import-Module -Name $module -Force
     }
@@ -667,8 +659,7 @@ try {
         }
     }
     $context = Get-MgContext
-    Write-Host ''
-    Write-Host "Successfully connected to Microsoft Graph tenant $($context.TenantId)." -ForegroundColor Green
+    Write-Host "`nSuccessfully connected to Microsoft Graph tenant $($context.TenantId)." -ForegroundColor Green
 }
 catch {
     Write-Error $_.Exception.Message
@@ -683,16 +674,14 @@ $missingScopes = $requiredScopes | Where-Object { $_ -notin $currentScopes }
 if ($missingScopes.Count -gt 0) {
     Write-Host 'WARNING: The following scope permissions are missing:' -ForegroundColor Red
     $missingScopes | ForEach-Object { Write-Host "  - $_" -ForegroundColor Yellow }
-    Write-Host ''
-    Write-Host 'Please ensure these permissions are granted to the app registration for full functionality.' -ForegroundColor Yellow
+    Write-Host "`nPlease ensure these permissions are granted to the app registration for full functionality." -ForegroundColor Yellow
     exit
 }
-Write-Host ''
-Write-Host 'All required scope permissions are present.' -ForegroundColor Green
+Write-Host "`nAll required scope permissions are present." -ForegroundColor Green
 #endregion scopes
 
 #region script
-Do {
+do {
 
     #region discovery
     Start-Sleep -Seconds 2  # Delay to allow for Graph API to catch up
@@ -1046,13 +1035,11 @@ Do {
     #endregion group tag prompt
 
     #region Autopilot device update
-    Write-Host ''
-    Write-Host "The following $($autopilotUpdateDevices.Count) Autopilot device(s) are in scope to be updated:" -ForegroundColor Yellow
+    Write-Host "`nThe following $($autopilotUpdateDevices.Count) Autopilot device(s) are in scope to be updated:" -ForegroundColor Yellow
     $autopilotUpdateDevices | Format-Table -Property displayName, serialNumber, manufacturer, model, purchaseOrder, userlessEnrollmentStatus -AutoSize
 
     if ($whatIf) {
-        Write-Host ''
-        Write-Host 'WhatIf mode enabled, no changes will be made.' -ForegroundColor Magenta
+        Write-Host "`nWhatIf mode enabled, no changes will be made." -ForegroundColor Magenta
     }
 
     Write-Warning -Message "You are about to update $($autopilotUpdateDevices.Count) Autopilot device(s)." -WarningAction Inquire
@@ -1087,7 +1074,6 @@ Do {
         #Write-Host "Updated Autopilot Group Tag with Serial Number: $($autopilotUpdateDevice.serialNumber) to '$groupTagNew'." -ForegroundColor Green
     }
 
-    Write-Host ''
     Write-Progress -Activity $progressActivity -Status 'Complete' -PercentComplete 100
     Write-Host "Successfully updated $($autopilotUpdateDevices.Count) Autopilot device(s)" -ForegroundColor Green
     #endregion Autopilot device update
@@ -1110,9 +1096,7 @@ Do {
                 $groupRule = "(device.devicePhysicalIds -any _ -eq `\`"[OrderID]:$groupTagArray`\`")"
                 $groupsArray += [pscustomobject]@{displayName = "$($groupPrefix + $groupTagArray)"; description = "All Autopilot Devices with Group Tag '$groupTagArray' created by AutopilotGroupTagger"; rule = "$groupRule" }
             }
-            Write-Host ''
-            Write-Host "The following $($groupsArray.Count) group(s) will be created:" -ForegroundColor Yellow
-            Write-Host ''
+            Write-Host "`nThe following $($groupsArray.Count) group(s) will be created:" -ForegroundColor Yellow
             $groupsArray | Select-Object -Property displayName, rule, description | Format-Table -AutoSize
 
             Write-Warning -Message "You are about to create $($groupsArray.Count) new group(s) in Microsoft Entra ID. Please confirm you want to continue." -WarningAction Inquire
@@ -1126,8 +1110,7 @@ Do {
                 }
 
                 if (!(Get-MDMGroup -groupName $groupName)) {
-                    Write-Host ''
-                    Write-Host "Creating Group $groupName with rule $($group.rule)" -ForegroundColor Cyan
+                    Write-Host "`nCreating Group $groupName with rule $($group.rule)" -ForegroundColor Cyan
                     $groupJSON = @"
 {
     "description": "$($group.description)",
@@ -1150,11 +1133,9 @@ Do {
                         New-MDMGroup -JSON $groupJSON | Out-Null
                     }
                     Write-Host "Group $($group.displayName) created successfully." -ForegroundColor Green
-                    Write-Host ''
                 }
                 else {
                     Write-Host "Group $($group.displayName) already exists, skipping creation." -ForegroundColor Yellow
-                    Write-Host ''
                     continue
                 }
             }
@@ -1165,7 +1146,8 @@ Do {
     #endregion Group Creation
 
     $continueScript = Read-YesNoChoice -Title 'Continue AutopilotGroupTagger' -Message 'Do you want to update additional Autopilot device(s)?' -DefaultOption 0
+    Clear-Host
 }
 
-Until ($continueScript -eq '0')
+until ($continueScript -eq '0')
 #endregion script
