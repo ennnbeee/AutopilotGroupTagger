@@ -52,23 +52,23 @@ Also options to [unblock](https://learn.microsoft.com/en-us/autopilot/whats-new#
 
 ## 🔄 Updates
 
-- **v0.7**
+- **v0.7.0**
   - Updated to allow for re-running of the script
   - Bug fixes
-- v0.6
+- v0.6.0
   - New functionality to allow for unblocking of Autopilot devices
-- v0.5
+- v0.5.0
   - Allows for removal of Group Tags on Autopilot devices
   - Option to create Dynamic Entra ID groups based on the Group Tags
   - Support for PowerShell 7 on macOS and Windows replacing `Out-GridView` with `Out-ConsoleGridView` as part of the `Microsoft.PowerShell.ConsoleGuiTools` module
   - Allow for reselection of Group Tags, device makes and models, and purchase orders
-- v0.4
+- v0.4.0
   - Now supports PowerShell 5
-- v0.3
+- v0.3.0
   - Improved logic around Autopilot device selection options
-- v0.2
+- v0.2.0
   - Included functionality to update group tags based on Purchase order
-- v0.1
+- v0.1.0
   - Initial release
 
 ## ⏯ Usage
