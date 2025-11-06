@@ -2,7 +2,11 @@
 
 AutoPilotGroupTagger is a PowerShell based utility that allows for bulk update and management of Windows Autopilot Device Group Tags, or unblocking of Autopilot devices, for those who are either retrospectively updating Autopilot devices or otherwise.
 
-This script is a part of the [MEM Official Community Tool](https://www.memcommunity.com/official-community-tool-oct)
+## MEM Official Community Tool
+
+This script has been recognised as part of the [MEM Official Community Tools](https://www.memcommunity.com/official-community-tool-oct) and was carefully reviewed by a panel of industry experts.
+
+This solution was evaluated based on technical value, originality, usefulness, and impact on the Endpoint Management ecosystem.
 
 ## ⚠ Public Preview Notice
 
@@ -44,17 +48,16 @@ Also options to [unblock](https://learn.microsoft.com/en-us/autopilot/whats-new#
 
 > [!IMPORTANT]
 >
-> - Supports PowerShell 5 on Windows
 > - Supports PowerShell 7 on Windows and macOS
 > - `Microsoft.Graph.Authentication` module should be installed, the script will detect and install if required.
-> - `Microsoft.PowerShell.ConsoleGuiTools` module should be installed when using PowerShell 7, the script will detect and install if required.
+> - `Microsoft.PowerShell.ConsoleGuiTools` module should be installed, the script will detect and install if required.
 > - Entra ID App Registration with appropriate Graph Scopes or using Interactive Sign-In with a privileged account
 
 ## 🔄 Updates
 
 - **v0.7.0**
   - Updated to allow for re-running of the script
-  - Bug fixes
+  - Bug fixes and UI improvements
 - v0.6.0
   - New functionality to allow for unblocking of Autopilot devices
 - v0.5.0
@@ -117,13 +120,10 @@ Then run the script with the corresponding Entra ID Tenant ID, AppId and AppSecr
 If you want the script to create dynamic groups based on the new Group Tags provided, include the switch parameter `createGroups`:
 
 ```PowerShell
-.\AutopilotGroupTagger.ps1 -createGroups
+.\AutopilotGroupTagger.ps1 -createGroups -groupPrefix 'AGT-Autopilot-'
 ```
 
 This will allow for groups to be created with a prefix of **AGT-Autopilot-** followed by the Group Tag you specify, only if a group with the same name does not already exist.
-
-> [!NOTE]
-> If you want to change the Group name prefix update the `$groupPrefix` variable.
 
 ### ⁉ WhatIf Mode
 
@@ -138,11 +138,7 @@ If you want the script to just simulate the update of Group Tags use the `whatIf
 
 ## 🎬 Demos
 
-### 🛍 PowerShell 5 Create Groups
-
-![AutoPilotGroupTagger](img/agt-demo-ps5-groups.gif)
-
-### 🛍 PowerShell 7 Create Groups
+### 🛍 Create Groups
 
 ![AutoPilotGroupTagger](img/agt-demo-ps7-groups.gif)
 
@@ -178,19 +174,19 @@ Demo coming at some point, maybe.
 
 ![AutoPilotGroupTagger](img/agt-demo-report.gif)
 
-### 🅰 Unblock All Windows Autopilot devices
+### A Unblock All Windows Autopilot devices
 
 Demo coming at some point, maybe.
 
-### 🅱 Unblock blocked Windows Autopilot devices
+### B Unblock blocked Windows Autopilot devices
 
 Demo coming at some point, maybe.
 
-### 🌊 Unblock specific manufacturers of Windows Autopilot devices
+### C Unblock specific manufacturers of Windows Autopilot devices
 
 Demo coming at some point, maybe.
 
-### 🍆 Unblock specific models of Windows Autopilot devices
+### D Unblock specific models of Windows Autopilot devices
 
 Demo coming at some point, maybe.
 

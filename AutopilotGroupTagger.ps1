@@ -43,6 +43,9 @@ Switch to enable WhatIf mode to simulate changes.
 .PARAMETER createGroups
 Switch to enable the creation of dynamic groups based on Group Tags.
 
+.PARAMETER groupPrefix
+Provide the prefix to be used for the creation of dynamic groups. Default is 'AGT-Autopilot-'.
+
 .PARAMETER tenantId
 Provide the Id of the Entra ID tenant to connect to.
 
@@ -73,6 +76,9 @@ param(
     [Parameter(Mandatory = $false, HelpMessage = 'Switch to enable the creation of dynamic groups based on Group Tags')]
     [switch]$createGroups,
 
+    [Parameter(Mandatory = $false, HelpMessage = 'Provide the prefix to be used for the creation of dynamic groups')]
+    [String]$groupPrefix = 'AGT-Autopilot-',
+
     [Parameter(Mandatory = $false, HelpMessage = 'Provide the Id of the Entra ID tenant to connect to')]
     [ValidateLength(36, 36)]
     [String]$tenantId,
@@ -91,7 +97,21 @@ param(
 )
 
 #region Functions
-function Test-JSON {
+function Test-JSONData {
+
+    <#
+    .SYNOPSIS
+    Validates JSON data format.
+
+    .DESCRIPTION
+    The Test-JSONData function checks if the provided JSON string is in a valid format.
+
+    .PARAMETER JSON
+    Specifies the JSON string to validate.
+
+    .EXAMPLE
+    Test-JSONData -JSON '{"key": "value"}'
+    #>
 
     param (
         $JSON
@@ -104,13 +124,13 @@ function Test-JSON {
     }
     catch {
         $validJson = $false
-        $_.Exception
-    }
-    if (!$validJson) {
-        Write-Host "Provided JSON isn't in valid JSON format" -ForegroundColor Red
+        Write-Error $_.Exception.Message
         break
     }
-
+    if (!$validJson) {
+        Write-Error $_.Exception.Message
+        break
+    }
 }
 function Connect-ToGraph {
     <#
@@ -521,7 +541,7 @@ function New-MDMGroup() {
     $Resource = 'groups'
 
     try {
-        Test-Json -Json $JSON
+        Test-JsonData -Json $JSON
         $uri = "https://graph.microsoft.com/$graphApiVersion/$($Resource)"
         Invoke-MgGraphRequest -Uri $uri -Method Post -Body $JSON -ContentType 'application/json'
     }
@@ -589,6 +609,14 @@ function Read-YesNoChoice {
 }
 #endregion Functions
 
+#region variables
+$modules = @('Microsoft.Graph.Authentication', 'Microsoft.PowerShell.ConsoleGuiTools')
+$requiredScopes = @('Device.Read.All', 'DeviceManagementServiceConfig.ReadWrite.All', 'DeviceManagementManagedDevices.Read.All', 'Group.ReadWrite.All')
+[String[]]$scopes = $requiredScopes -join ', '
+$rndWait = Get-Random -Minimum 1 -Maximum 2
+$continueScript = ''
+#endregion variables
+
 #region intro
 Write-Host '
  _______         __                __ __         __
@@ -610,26 +638,19 @@ Write-Host '
 Write-Host 'AutopilotGroupTagger - Update Autopilot devices in bulk.' -ForegroundColor Green
 Write-Host 'Nick Benton - oddsandendpoints.co.uk' -NoNewline;
 Write-Host ' | Version' -NoNewline; Write-Host ' 0.7 Public Preview' -ForegroundColor Yellow -NoNewline
-Write-Host ' | Last updated: ' -NoNewline; Write-Host '2025-09-09' -ForegroundColor Magenta
+Write-Host ' | Last updated: ' -NoNewline; Write-Host '2025-10-08' -ForegroundColor Magenta
 Write-Host "`nIf you have any feedback, please open an issue at https://github.com/ennnbeee/AutopilotGroupTagger/issues" -ForegroundColor Cyan
-Write-Host ''
+Start-Sleep -Seconds $rndWait
 #endregion intro
 
-#region variables
-$groupPrefix = 'AGT-Autopilot-'
-$requiredScopes = @('Device.Read.All', 'DeviceManagementServiceConfig.ReadWrite.All', 'DeviceManagementManagedDevices.Read.All', 'Group.ReadWrite.All')
-[String[]]$scopes = $requiredScopes -join ', '
-$rndWait = Get-Random -Minimum 1 -Maximum 2
-$continueScript = ''
-#endregion variables
+#region preflight
+if ($PSVersionTable.PSVersion.Major -eq 5) {
+    Write-Host "`nWARNING: PowerShell 5 is not supported, use PowerShell 7.2 or later." -ForegroundColor Yellow
+    exit
+}
+#endregion preflight
 
 #region module check
-if ($PSVersionTable.PSVersion.Major -eq 7) {
-    $modules = @('Microsoft.Graph.Authentication', 'Microsoft.PowerShell.ConsoleGuiTools')
-}
-else {
-    $modules = @('Microsoft.Graph.Authentication')
-}
 foreach ($module in $modules) {
     Write-Host "Checking for $module PowerShell module..." -ForegroundColor Cyan
     if (!(Get-Module -Name $module -ListAvailable)) {
@@ -735,47 +756,29 @@ do {
     #endregion discovery
 
     #region choices
+    $choice = ''
     $autopilotUpdateDevices = @()
     while ($autopilotUpdateDevices.Count -eq 0) {
         if ($whatIf) {
-            Write-Host ''
-            Write-Host 'WhatIf mode enabled, no changes will be made.' -ForegroundColor Magenta
+            Write-Host "`nWhatIf mode enabled, no changes will be made." -ForegroundColor Magenta
         }
         if ($createGroups) {
-            Write-Host ''
-            Write-Host 'Dynamic Groups will be created based on Group Tags' -ForegroundColor Magenta
+            Write-Host "`nDynamic Groups will be created based on Group Tags" -ForegroundColor Green
         }
-        Write-Host ''
-        Write-Host 'Please Choose one of the Group Tag options below: ' -ForegroundColor Magenta
-        Write-Host ''
-        Write-Host ' (1) Update All Autopilot Devices Group Tags'
-        Write-Host ''
-        Write-Host ' (2) Update All Autopilot Devices with Empty Group Tags'
-        Write-Host ''
-        Write-Host ' (3) Update All Autopilot Devices with a specific Group Tag'
-        Write-Host ''
-        Write-Host ' (4) Update All selected Manufacturers of Autopilot Device Group Tags'
-        Write-Host ''
-        Write-Host ' (5) Update All selected Models of Autopilot Device Group Tags'
-        Write-Host ''
-        Write-Host ' (6) Update All Autopilot Devices with a specific Purchase Order'
-        Write-Host ''
-        Write-Host ' (7) Update a selection of Autopilot Devices Group Tags interactively'
-        Write-Host ''
-        Write-Host ' (8) Update Autopilot Devices Group Tags using exported data'
-        Write-Host ''
-        Write-Host ' (a) Unblock All Autopilot Devices'
-        Write-Host ''
-        Write-Host ' (b) Unblock All blocked Autopilot Devices'
-        Write-Host ''
-        Write-Host ' (c) Unblock All selected Manufacturers of Autopilot Device'
-        Write-Host ''
-        Write-Host ' (d) Unblock All selected Models of Autopilot Device'
-        Write-Host ''
-        Write-Host ' (X) EXIT SCRIPT ' -ForegroundColor Red
-        Write-Host ''
-        $choice = ''
-        $autopilotUpdateDevices = @()
+        Write-Host "`nPlease Choose one of the Group Tag options below:" -ForegroundColor White
+        Write-Host "`n (1) Update All Autopilot Devices Group Tags" -ForegroundColor Cyan
+        Write-Host "`n (2) Update All Autopilot Devices with Empty Group Tags" -ForegroundColor Cyan
+        Write-Host "`n (3) Update All Autopilot Devices with a specific Group Tag" -ForegroundColor Cyan
+        Write-Host "`n (4) Update All selected Manufacturers of Autopilot Device Group Tags" -ForegroundColor Cyan
+        Write-Host "`n (5) Update All selected Models of Autopilot Device Group Tags" -ForegroundColor Cyan
+        Write-Host "`n (6) Update All Autopilot Devices with a specific Purchase Order" -ForegroundColor Cyan
+        Write-Host "`n (7) Update a selection of Autopilot Devices Group Tags interactively" -ForegroundColor Cyan
+        Write-Host "`n (8) Update Autopilot Devices Group Tags using exported data" -ForegroundColor Cyan
+        Write-Host "`n (a) Unblock All Autopilot Devices" -ForegroundColor Magenta
+        Write-Host "`n (b) Unblock All blocked Autopilot Devices" -ForegroundColor Magenta
+        Write-Host "`n (c) Unblock All selected Manufacturers of Autopilot Device" -ForegroundColor Magenta
+        Write-Host "`n (d) Unblock All selected Models of Autopilot Device" -ForegroundColor Magenta
+        Write-Host "`n (X) EXIT SCRIPT`n" -ForegroundColor Red
         $choice = Read-Host -Prompt 'Please select an option from the provided list, then press enter'
         while ( $choice -notin @('1', '2', '3', '4', '5', '6', '7', '8', 'a', 'b', 'c', 'd', 'X')) {
             $choice = Read-Host -Prompt 'Please select an option from the provided list, then press enter'
@@ -791,12 +794,10 @@ do {
             #All AutoPilot Devices with Empty Group Tags
             $autopilotUpdateDevices = $autopilotDevices | Where-Object { ($null -eq $_.groupTag) -or ($_.groupTag) -eq '' }
             if ($autopilotUpdateDevices.count -eq 0) {
-                Write-Host
+                Start-Sleep -Seconds $rndWait
                 Write-Host 'No Autopilot Devices with Empty Group Tags found.' -ForegroundColor Yellow
-                Write-Host
                 Write-Host 'Please select another option.' -ForegroundColor Yellow
-                Write-Host
-                continue
+                Start-Sleep -Seconds $rndWait
             }
         }
         if ($choice -eq '3') {
@@ -804,22 +805,13 @@ do {
             $confirmGroupTags = 0
             while ($confirmGroupTags -ne 1) {
                 while ($autopilotGroupTags.count -eq 0) {
-                    if ($PSVersionTable.PSVersion.Major -eq 7) {
-                        $autopilotGroupTags = @($autopilotDevices | Select-Object -Property groupTag -Unique | Out-ConsoleGridView -Title 'Select GroupTags of Autopilot Devices to Update' -OutputMode Multiple)
-                    }
-                    else {
-                        $autopilotGroupTags = @($autopilotDevices | Select-Object -Property groupTag -Unique | Out-GridView -PassThru -Title 'Select GroupTags of Autopilot Devices to Update')
-                    }
+                    $autopilotGroupTags = @($autopilotDevices | Select-Object -Property groupTag -Unique | Out-ConsoleGridView -Title 'Select GroupTags of Autopilot Devices to Update' -OutputMode Multiple)
                 }
-                Write-Host ''
-                Write-Host 'The following Group Tag(s) were selected:' -ForegroundColor Cyan
-                Write-Host ''
+                Write-Host "`nThe following Group Tag(s) were selected:`n" -ForegroundColor Cyan
                 $autopilotGroupTags.groupTag
-                Write-Host ''
                 $confirmGroupTags = Read-YesNoChoice -Title 'Please confirm Group Tag(s) selection' -Message 'Are these the correct Group Tag(s) to update?' -DefaultOption 1
                 if ($confirmGroupTags -eq 0) {
-                    Write-Host ''
-                    Write-Host 'Please re-select the Group Tags to update' -ForegroundColor Yellow
+                    Write-Host "`nPlease re-select the Group Tags to update" -ForegroundColor Yellow
                     $autopilotGroupTags = $null
                 }
                 $autopilotUpdateDevices = $autopilotDevices | Where-Object { $_.groupTag -in $autopilotGroupTags.groupTag }
@@ -830,22 +822,13 @@ do {
             $confirmManufacturers = 0
             while ($confirmManufacturers -ne 1) {
                 while ($autopilotManufacturers.count -eq 0) {
-                    if ($PSVersionTable.PSVersion.Major -eq 7) {
-                        $autopilotManufacturers = @($autopilotDevices | Select-Object -Property manufacturer -Unique | Out-ConsoleGridView -Title 'Select Manufacturer of Autopilot Devices to Update' -OutputMode Multiple)
-                    }
-                    else {
-                        $autopilotManufacturers = @($autopilotDevices | Select-Object -Property manufacturer -Unique | Out-GridView -PassThru -Title 'Select Manufacturer of Autopilot Devices to Update')
-                    }
+                    $autopilotManufacturers = @($autopilotDevices | Select-Object -Property manufacturer -Unique | Out-ConsoleGridView -Title 'Select Manufacturer of Autopilot Devices to Update' -OutputMode Multiple)
                 }
-                Write-Host ''
-                Write-Host 'The following Autopilot Device Manufacturer(s) were selected:' -ForegroundColor Cyan
-                Write-Host ''
+                Write-Host "`nThe following Autopilot Device Manufacturer(s) were selected:`n" -ForegroundColor Cyan
                 $autopilotManufacturers.manufacturer
-                Write-Host ''
                 $confirmManufacturers = Read-YesNoChoice -Title 'Please confirm the Autopilot Device Manufacturer(s)' -Message 'Are these the correct Manufacturer(s) to update?' -DefaultOption 1
                 if ($confirmManufacturers -eq 0) {
-                    Write-Host ''
-                    Write-Host 'Please re-select the Manufacturer(s) to update' -ForegroundColor Yellow
+                    Write-Host "`nPlease re-select the Manufacturer(s) to update" -ForegroundColor Yellow
                     $autopilotManufacturers = $null
                 }
                 $autopilotUpdateDevices = $autopilotDevices | Where-Object { $_.manufacturer -in $autopilotManufacturers.manufacturer }
@@ -856,22 +839,13 @@ do {
             $confirmModels = 0
             while ($confirmModels -ne 1) {
                 while ($autopilotModels.count -eq 0) {
-                    if ($PSVersionTable.PSVersion.Major -eq 7) {
-                        $autopilotModels = @($autopilotDevices | Select-Object -Property model -Unique | Out-ConsoleGridView -Title 'Select Models of Autopilot Devices to Update' -OutputMode Multiple)
-                    }
-                    else {
-                        $autopilotModels = @($autopilotDevices | Select-Object -Property model -Unique | Out-GridView -PassThru -Title 'Select Models of Autopilot Devices to Update')
-                    }
+                    $autopilotModels = @($autopilotDevices | Select-Object -Property model -Unique | Out-ConsoleGridView -Title 'Select Models of Autopilot Devices to Update' -OutputMode Multiple)
                 }
-                Write-Host ''
-                Write-Host 'The following Autopilot Device Model(s) were selected:' -ForegroundColor Cyan
-                Write-Host ''
+                Write-Host "`nThe following Autopilot Device Model(s) were selected:`n" -ForegroundColor Cyan
                 $autopilotModels.model
-                Write-Host ''
                 $confirmModels = Read-YesNoChoice -Title 'Please confirm the Autopilot Device Model(s)' -Message 'Are these the correct Model(s) to update?' -DefaultOption 1
                 if ($confirmModels -eq 0) {
-                    Write-Host ''
-                    Write-Host 'Please re-select the Models to update' -ForegroundColor Yellow
+                    Write-Host "`nPlease re-select the Models to update" -ForegroundColor Yellow
                     $autopilotModels = $null
                 }
                 $autopilotUpdateDevices = $autopilotDevices | Where-Object { $_.model -in $autopilotModels.model }
@@ -882,22 +856,13 @@ do {
             $confirmPOs = 0
             while ($confirmPOs -ne 1) {
                 while ($autopilotPOs.count -eq 0) {
-                    if ($PSVersionTable.PSVersion.Major -eq 7) {
-                        $autopilotPOs = @($autopilotDevices | Select-Object -Property purchaseOrder -Unique | Out-ConsoleGridView -Title 'Select Purchase Order of Autopilot Devices to Update' -OutputMode Multiple)
-                    }
-                    else {
-                        $autopilotPOs = @($autopilotDevices | Select-Object -Property purchaseOrder -Unique | Out-GridView -PassThru -Title 'Select Purchase Order of Autopilot Devices to Update')
-                    }
+                    $autopilotPOs = @($autopilotDevices | Select-Object -Property purchaseOrder -Unique | Out-ConsoleGridView -Title 'Select Purchase Order of Autopilot Devices to Update' -OutputMode Multiple)
                 }
-                Write-Host ''
-                Write-Host 'The following Autopilot Device Purchase Order(s) were selected:' -ForegroundColor Cyan
-                Write-Host ''
+                Write-Host "`nThe following Autopilot Device Purchase Order(s) were selected:`n" -ForegroundColor Cyan
                 $autopilotPOs.purchaseOrder
-                Write-Host ''
                 $confirmPOs = Read-YesNoChoice -Title 'Please confirm Autopilot Device Purchase Order(s)' -Message 'Are these the correct Purchase Order(s) to update?' -DefaultOption 1
                 if ($confirmPOs -eq 0) {
-                    Write-Host ''
-                    Write-Host 'Please re-select the Purchase Order(s) to update' -ForegroundColor Yellow
+                    Write-Host "`nPlease re-select the Purchase Order(s) to update" -ForegroundColor Yellow
                     $autopilotPOs = $null
                 }
                 $autopilotUpdateDevices = $autopilotDevices | Where-Object { $_.purchaseOrder -in $autopilotPOs.purchaseOrder }
@@ -905,24 +870,16 @@ do {
         }
         if ($choice -eq '7') {
             while ($autopilotUpdateDevices.count -eq 0) {
-                if ($PSVersionTable.PSVersion.Major -eq 7) {
-                    $autopilotUpdateDevices = @($autopilotDevices | Out-ConsoleGridView -Title 'Select Autopilot Devices to Update' -OutputMode Multiple)
-                }
-                else {
-                    $autopilotUpdateDevices = @($autopilotDevices | Out-GridView -PassThru -Title 'Select Autopilot Devices to Update')
-                }
+                $autopilotUpdateDevices = @($autopilotDevices | Out-ConsoleGridView -Title 'Select Autopilot Devices to Update' -OutputMode Multiple)
             }
         }
         if ($choice -eq '8') {
             # Report
             $autopilotDevices | Export-Csv -Path '.\AutopilotDevices.csv' -NoTypeInformation -Force
-            Write-Host ''
-            Write-Host 'Exported All Autopilot Device(s) to AutopilotDevices.csv' -ForegroundColor Cyan
+            Write-Host "`nExported All Autopilot Device(s) to AutopilotDevices.csv" -ForegroundColor Cyan
             while ($autopilotUpdateDevices.count -eq 0 -or ($autopilotUpdateDevices.groupTag | Measure-Object -Maximum).Maximum.length -gt 512) {
-                Write-Host ''
                 if (($autopilotUpdateDevices.groupTag | Measure-Object -Maximum).Maximum.length -gt 512) {
-                    Write-Host 'One or more Group Tags are greater than 512 characters.' -ForegroundColor Red
-                    Write-Host ''
+                    Write-Host "`nOne or more Group Tags are greater than 512 characters." -ForegroundColor Red
                 }
                 Write-Warning -Message 'Please update the Group Tags on device(s) in AutopilotDevices.csv and save the file before continuing' -WarningAction Inquire
                 $autopilotImportDevices = Import-Csv -Path .\AutopilotDevices.csv
@@ -939,12 +896,10 @@ do {
             # Unblock All blocked Autopilot Devices
             $autopilotUpdateDevices = $autopilotDevices | Where-Object { $_.userlessEnrollmentStatus -ne 'allowed' }
             if ($autopilotUpdateDevices.count -eq 0) {
-                Write-Host ''
+                Start-Sleep -Seconds $rndWait
                 Write-Host 'No Autopilot Devices are currently blocked.' -ForegroundColor Yellow
-                Write-Host ''
                 Write-Host 'Please select another option.' -ForegroundColor Yellow
-                Write-Host ''
-                continue
+                Start-Sleep -Seconds $rndWait
             }
         }
         if ($choice -eq 'c') {
@@ -952,22 +907,13 @@ do {
             $confirmManufacturers = 0
             while ($confirmManufacturers -ne 1) {
                 while ($autopilotManufacturers.count -eq 0) {
-                    if ($PSVersionTable.PSVersion.Major -eq 7) {
                         $autopilotManufacturers = @($autopilotDevices | Select-Object -Property manufacturer -Unique | Out-ConsoleGridView -Title 'Select Manufacturer of Autopilot Devices to unblock' -OutputMode Multiple)
-                    }
-                    else {
-                        $autopilotManufacturers = @($autopilotDevices | Select-Object -Property manufacturer -Unique | Out-GridView -PassThru -Title 'Select Manufacturer of Autopilot Devices to unblock')
-                    }
                 }
-                Write-Host ''
-                Write-Host 'The following Autopilot Device Manufacturer(s) were selected:' -ForegroundColor Cyan
-                Write-Host ''
+                Write-Host "`nThe following Autopilot Device Manufacturer(s) were selected:`n" -ForegroundColor Cyan
                 $autopilotManufacturers.manufacturer
-                Write-Host ''
                 $confirmManufacturers = Read-YesNoChoice -Title 'Please confirm the Autopilot Device Manufacturer(s)' -Message 'Are these the correct Manufacturer(s) to unblock?' -DefaultOption 1
                 if ($confirmManufacturers -eq 0) {
-                    Write-Host ''
-                    Write-Host 'Please re-select the Manufacturer(s) to unblock' -ForegroundColor Yellow
+                    Write-Host "`nPlease re-select the Manufacturer(s) to unblock" -ForegroundColor Yellow
                     $autopilotManufacturers = $null
                 }
                 $autopilotUpdateDevices = $autopilotDevices | Where-Object { $_.manufacturer -in $autopilotManufacturers.manufacturer }
@@ -978,22 +924,13 @@ do {
             $confirmModels = 0
             while ($confirmModels -ne 1) {
                 while ($autopilotModels.count -eq 0) {
-                    if ($PSVersionTable.PSVersion.Major -eq 7) {
                         $autopilotModels = @($autopilotDevices | Select-Object -Property model -Unique | Out-ConsoleGridView -Title 'Select Models of Autopilot Devices to unblock' -OutputMode Multiple)
-                    }
-                    else {
-                        $autopilotModels = @($autopilotDevices | Select-Object -Property model -Unique | Out-GridView -PassThru -Title 'Select Models of Autopilot Devices to unblock')
-                    }
                 }
-                Write-Host ''
-                Write-Host 'The following Autopilot Device Model(s) were selected:' -ForegroundColor Cyan
-                Write-Host ''
+                Write-Host "`nThe following Autopilot Device Model(s) were selected:`n" -ForegroundColor Cyan
                 $autopilotModels.model
-                Write-Host ''
                 $confirmModels = Read-YesNoChoice -Title 'Please confirm the Autopilot Device Model(s)' -Message 'Are these the correct Model(s) to unblock?' -DefaultOption 1
                 if ($confirmModels -eq 0) {
-                    Write-Host ''
-                    Write-Host 'Please re-select the Models to unblock' -ForegroundColor Yellow
+                    Write-Host "`nPlease re-select the Models to unblock" -ForegroundColor Yellow
                     $autopilotModels = $null
                 }
                 $autopilotUpdateDevices = $autopilotDevices | Where-Object { $_.model -in $autopilotModels.model }
