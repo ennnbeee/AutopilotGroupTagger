@@ -290,7 +290,7 @@ function Set-AutopilotDevice() {
         if ($groupTag) {
             $Resource = "deviceManagement/windowsAutopilotDeviceIdentities/$Id/updateDeviceProperties"
         }
-        else {
+        elseif ($unblock -eq $true) {
             $Resource = "deviceManagement/windowsAutopilotDeviceIdentities/$Id//allowNextEnrollment"
         }
 
@@ -529,7 +529,7 @@ function New-MDMGroup() {
 
     #>
 
-    [cmdletbinding()]
+    [cmdletbinding(SupportsShouldProcess, ConfirmImpact = 'low')]
 
     param
     (
@@ -537,17 +537,28 @@ function New-MDMGroup() {
         $JSON
     )
 
-    $graphApiVersion = 'beta'
-    $Resource = 'groups'
+    process {
 
-    try {
-        Test-JsonData -Json $JSON
-        $uri = "https://graph.microsoft.com/$graphApiVersion/$($Resource)"
-        Invoke-MgGraphRequest -Uri $uri -Method Post -Body $JSON -ContentType 'application/json'
-    }
-    catch {
-        Write-Error $_.Exception.Message
-        break
+        $graphApiVersion = 'beta'
+        $Resource = 'groups'
+
+        if ($PSCmdlet.ShouldProcess('Entra Group', 'Create')) {
+            try {
+                Test-JsonData -Json $JSON
+                $uri = "https://graph.microsoft.com/$graphApiVersion/$($Resource)"
+                Invoke-MgGraphRequest -Uri $uri -Method Post -Body $JSON -ContentType 'application/json'
+            }
+            catch {
+                Write-Error $_.Exception.Message
+                break
+            }
+        }
+        elseif ($WhatIfPreference.IsPresent) {
+            Write-Output 'Entra Group would have been created'
+        }
+        else {
+            Write-Output 'Entra Group was not created'
+        }
     }
 }
 function Read-YesNoChoice {
@@ -907,7 +918,7 @@ do {
             $confirmManufacturers = 0
             while ($confirmManufacturers -ne 1) {
                 while ($autopilotManufacturers.count -eq 0) {
-                        $autopilotManufacturers = @($autopilotDevices | Select-Object -Property manufacturer -Unique | Out-ConsoleGridView -Title 'Select Manufacturer of Autopilot Devices to unblock' -OutputMode Multiple)
+                    $autopilotManufacturers = @($autopilotDevices | Select-Object -Property manufacturer -Unique | Out-ConsoleGridView -Title 'Select Manufacturer of Autopilot Devices to unblock' -OutputMode Multiple)
                 }
                 Write-Host "`nThe following Autopilot Device Manufacturer(s) were selected:`n" -ForegroundColor Cyan
                 $autopilotManufacturers.manufacturer
@@ -924,7 +935,7 @@ do {
             $confirmModels = 0
             while ($confirmModels -ne 1) {
                 while ($autopilotModels.count -eq 0) {
-                        $autopilotModels = @($autopilotDevices | Select-Object -Property model -Unique | Out-ConsoleGridView -Title 'Select Models of Autopilot Devices to unblock' -OutputMode Multiple)
+                    $autopilotModels = @($autopilotDevices | Select-Object -Property model -Unique | Out-ConsoleGridView -Title 'Select Models of Autopilot Devices to unblock' -OutputMode Multiple)
                 }
                 Write-Host "`nThe following Autopilot Device Model(s) were selected:`n" -ForegroundColor Cyan
                 $autopilotModels.model
