@@ -1,6 +1,6 @@
 <#PSScriptInfo
 
-.VERSION 0.7.0
+.VERSION 0.7.1
 .GUID 63c8809e-5c8a-4ddc-82a4-29706992802f
 .AUTHOR Nick Benton
 .COMPANYNAME
@@ -13,6 +13,7 @@
 .REQUIREDSCRIPTS
 .EXTERNALSCRIPTDEPENDENCIES
 .RELEASENOTES
+v0.7.1 - Cosmetic changes
 v0.7.0 - Updated to support re-running of the script and other bug fixes
 v0.6.0 - Supports unblocking of Autopilot devices
 v0.5.0 - Now supports PowerShell 7 on macOS, removal of Group Tags, and Dynamic Group creation
@@ -629,6 +630,7 @@ $continueScript = ''
 #endregion variables
 
 #region intro
+Clear-Host
 Write-Host '
  _______         __                __ __         __
 |   _   |.--.--.|  |_.-----.-----.|__|  |.-----.|  |_' -ForegroundColor Cyan -NoNewline
@@ -648,8 +650,8 @@ Write-Host '
 
 Write-Host 'AutopilotGroupTagger - Update Autopilot devices in bulk.' -ForegroundColor Green
 Write-Host 'Nick Benton - oddsandendpoints.co.uk' -NoNewline;
-Write-Host ' | Version' -NoNewline; Write-Host ' 0.7.0 Public Preview' -ForegroundColor Yellow -NoNewline
-Write-Host ' | Last updated: ' -NoNewline; Write-Host '2025-10-08' -ForegroundColor Magenta
+Write-Host ' | Version' -NoNewline; Write-Host ' 0.7.1 Public Preview' -ForegroundColor Yellow -NoNewline
+Write-Host ' | Last updated: ' -NoNewline; Write-Host '2026-02-23' -ForegroundColor Magenta
 Write-Host "`nIf you have any feedback, please open an issue at https://github.com/ennnbeee/AutopilotGroupTagger/issues" -ForegroundColor Cyan
 Start-Sleep -Seconds $rndWait
 #endregion intro
@@ -663,7 +665,7 @@ if ($PSVersionTable.PSVersion.Major -eq 5) {
 
 #region module check
 foreach ($module in $modules) {
-    Write-Host "Checking for $module PowerShell module..." -ForegroundColor Cyan
+    Write-Host "`nChecking for $module PowerShell module..." -ForegroundColor Cyan
     if (!(Get-Module -Name $module -ListAvailable)) {
         Install-Module -Name $module -Scope CurrentUser -AllowClobber
     }
@@ -797,10 +799,7 @@ do {
         if ($choice -eq 'X') {
             exit
         }
-        if ($choice -eq '1' -or $choice -eq 'a') {
-            #All AutoPilot Devices
-            $autopilotUpdateDevices = $autopilotDevices
-        }
+        if ($choice -eq '1' -or $choice -eq 'a') { $autopilotUpdateDevices = $autopilotDevices }
         if ($choice -eq '2') {
             #All AutoPilot Devices with Empty Group Tags
             $autopilotUpdateDevices = $autopilotDevices | Where-Object { ($null -eq $_.groupTag) -or ($_.groupTag) -eq '' }
@@ -957,24 +956,18 @@ do {
             $confirmGroupTag = 0
             while ($confirmGroupTag -ne 1) {
                 Write-Host 'Press Enter to select an empty Group Tag value which will remove the Group Tag from the Autopilot Device(s).' -ForegroundColor Yellow
-                Write-Host ''
-                [string]$groupTagNew = Read-Host "Please enter the *NEW* group tag you wish to apply to the $($autopilotUpdateDevices.Count) Autopilot device(s)"
+                [string]$groupTagNew = Read-Host "`nPlease enter the *NEW* group tag you wish to apply to the $($autopilotUpdateDevices.Count) Autopilot device(s)"
                 while ($groupTagNew.length -gt 512) {
                     [string]$groupTagNew = Read-Host "Please enter the *NEW* group tag you wish to apply to the $($autopilotUpdateDevices.Count) Autopilot device(s) but with less than 512 characters"
                 }
-                Write-Host ''
-                Write-Host 'The following Autopilot Device Group Tag was entered:' -ForegroundColor Cyan
-                Write-Host ''
+                Write-Host "`nThe following Autopilot Device Group Tag was entered:" -ForegroundColor Cyan
                 $groupTagNew
                 if ($groupTagNew -eq '' -or $null -eq $groupTagNew) {
                     Write-Host 'An empty Group Tag value will remove the Group Tag from the Autopilot Device(s).' -ForegroundColor red
-                    Write-Host ''
                 }
                 $confirmGroupTag = Read-YesNoChoice -Title 'Please confirm the Autopilot Device Group Tag' -Message 'Is this the correct Group Tag to use?' -DefaultOption 1
                 if ($confirmGroupTag -eq 0) {
-                    Write-Host ''
-                    Write-Host 'Please re-enter a *NEW* Group Tag' -ForegroundColor Yellow
-                    Write-Host ''
+                    Write-Host "`nPlease re-enter a *NEW* Group Tag" -ForegroundColor Yellow
                     $groupTagNew = $null
                 }
             }
@@ -1096,6 +1089,5 @@ do {
     $continueScript = Read-YesNoChoice -Title 'Continue AutopilotGroupTagger' -Message 'Do you want to update additional Autopilot device(s)?' -DefaultOption 0
     Clear-Host
 }
-
 until ($continueScript -eq '0')
 #endregion script
