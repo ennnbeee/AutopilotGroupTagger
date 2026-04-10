@@ -1,6 +1,6 @@
 <#PSScriptInfo
 
-.VERSION 0.7.1
+.VERSION 0.7.2
 .GUID 63c8809e-5c8a-4ddc-82a4-29706992802f
 .AUTHOR Nick Benton
 .COMPANYNAME
@@ -13,6 +13,7 @@
 .REQUIREDSCRIPTS
 .EXTERNALSCRIPTDEPENDENCIES
 .RELEASENOTES
+v0.7.2 - Copilot review
 v0.7.1 - Cosmetic changes
 v0.7.0 - Updated to support re-running of the script and other bug fixes
 v0.6.0 - Supports unblocking of Autopilot devices
@@ -126,11 +127,11 @@ function Test-JSONData {
     catch {
         $validJson = $false
         Write-Error $_.Exception.Message
-        break
+        throw
     }
     if (!$validJson) {
         Write-Error $_.Exception.Message
-        break
+        throw
     }
 }
 function Connect-ToGraph {
@@ -247,7 +248,7 @@ function Get-AutopilotDevice() {
     }
     catch {
         Write-Error $_.Exception.Message
-        break
+        throw
     }
 }
 function Set-AutopilotDevice() {
@@ -276,23 +277,23 @@ function Set-AutopilotDevice() {
 
     [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'high')]
     param(
-        [Parameter(Mandatory = $true)]
+        [Parameter(Mandatory = $true, ParameterSetName = 'GroupTag')]
+        [Parameter(Mandatory = $true, ParameterSetName = 'Unblock')]
         [string]$Id,
 
-        [Parameter(Mandatory = $false)]
+        [Parameter(Mandatory = $true, ParameterSetName = 'GroupTag')]
+        [AllowEmptyString()]
         [string]$groupTag,
 
-        [Parameter(Mandatory = $false)]
-        [bool]$unblock
+        [Parameter(Mandatory = $true, ParameterSetName = 'Unblock')]
+        [switch]$unblock
     )
 
     process {
         $graphApiVersion = 'Beta'
-        if ($groupTag) {
-            $Resource = "deviceManagement/windowsAutopilotDeviceIdentities/$Id/updateDeviceProperties"
-        }
-        elseif ($unblock -eq $true) {
-            $Resource = "deviceManagement/windowsAutopilotDeviceIdentities/$Id//allowNextEnrollment"
+        switch ($PSCmdlet.ParameterSetName) {
+            'GroupTag' { $Resource = "deviceManagement/windowsAutopilotDeviceIdentities/$Id/updateDeviceProperties" }
+            'Unblock' { $Resource = "deviceManagement/windowsAutopilotDeviceIdentities/$Id/allowNextEnrollment" }
         }
 
         if ($PSCmdlet.ShouldProcess('Autopilot Device', 'Update')) {
@@ -312,7 +313,7 @@ function Set-AutopilotDevice() {
             }
             catch {
                 Write-Error $_.Exception.Message
-                break
+                throw
             }
         }
         elseif ($WhatIfPreference.IsPresent) {
@@ -406,7 +407,7 @@ function Get-EntraIDObject() {
     }
     catch {
         Write-Error $_.Exception.Message
-        break
+        throw
     }
 }
 function Get-ManagedDevice() {
@@ -472,7 +473,7 @@ function Get-ManagedDevice() {
     }
     catch {
         Write-Error $Error[0].ErrorDetails.Message
-        break
+        throw
     }
 }
 function Get-MDMGroup() {
@@ -510,7 +511,7 @@ function Get-MDMGroup() {
     }
     catch {
         Write-Error $_.Exception.Message
-        break
+        throw
     }
 }
 function New-MDMGroup() {
@@ -551,7 +552,7 @@ function New-MDMGroup() {
             }
             catch {
                 Write-Error $_.Exception.Message
-                break
+                throw
             }
         }
         elseif ($WhatIfPreference.IsPresent) {
@@ -619,7 +620,7 @@ function Read-YesNoChoice {
 
     return $host.ui.PromptForChoice($Title, $Message, $Options, $DefaultOption)
 }
-#endregion Functions
+#endregion
 
 #region variables
 $modules = @('Microsoft.Graph.Authentication', 'Microsoft.PowerShell.ConsoleGuiTools')
@@ -627,7 +628,7 @@ $requiredScopes = @('Device.Read.All', 'DeviceManagementServiceConfig.ReadWrite.
 [String[]]$scopes = $requiredScopes -join ', '
 $rndWait = Get-Random -Minimum 1 -Maximum 2
 $continueScript = ''
-#endregion variables
+#endregion
 
 #region intro
 Clear-Host
@@ -650,18 +651,19 @@ Write-Host '
 
 Write-Host 'AutopilotGroupTagger - Update Autopilot devices in bulk.' -ForegroundColor Green
 Write-Host 'Nick Benton - oddsandendpoints.co.uk' -NoNewline;
-Write-Host ' | Version' -NoNewline; Write-Host ' 0.7.1 Public Preview' -ForegroundColor Yellow -NoNewline
-Write-Host ' | Last updated: ' -NoNewline; Write-Host '2026-02-23' -ForegroundColor Magenta
+Write-Host ' | Version' -NoNewline; Write-Host ' 0.7.2 Public Preview' -ForegroundColor Yellow -NoNewline
+Write-Host ' | Last updated: ' -NoNewline; Write-Host '2026-04-10' -ForegroundColor Magenta
 Write-Host "`nIf you have any feedback, please open an issue at https://github.com/ennnbeee/AutopilotGroupTagger/issues" -ForegroundColor Cyan
 Start-Sleep -Seconds $rndWait
-#endregion intro
+Clear-Host
+#endregion
 
 #region preflight
 if ($PSVersionTable.PSVersion.Major -eq 5) {
     Write-Host "`nWARNING: PowerShell 5 is not supported, use PowerShell 7.2 or later." -ForegroundColor Yellow
     exit
 }
-#endregion preflight
+#endregion
 
 #region module check
 foreach ($module in $modules) {
@@ -674,7 +676,7 @@ foreach ($module in $modules) {
         Import-Module -Name $module -Force
     }
 }
-#endregion module check
+#endregion
 
 #region app auth
 try {
@@ -699,7 +701,7 @@ catch {
     Write-Error $_.Exception.Message
     exit
 }
-#endregion app auth
+#endregion
 
 #region scopes
 $currentScopes = $context.Scopes
@@ -712,7 +714,7 @@ if ($missingScopes.Count -gt 0) {
     exit
 }
 Write-Host "`nAll required scope permissions are present." -ForegroundColor Green
-#endregion scopes
+#endregion
 
 #region script
 do {
@@ -1008,7 +1010,7 @@ do {
                 Set-AutopilotDevice -id $autopilotUpdateDevice.id -groupTag $groupTagNew -Confirm:$false
             }
             else {
-                Set-AutopilotDevice -id $autopilotUpdateDevice.id -unblock:$true -Confirm:$false
+                Set-AutopilotDevice -id $autopilotUpdateDevice.id -unblock -Confirm:$false
             }
 
         }
@@ -1042,12 +1044,13 @@ do {
 
             Write-Warning -Message "You are about to create $($groupsArray.Count) new group(s) in Microsoft Entra ID. Please confirm you want to continue." -WarningAction Inquire
 
+            $createdGroupsCount = 0
             foreach ($group in $groupsArray) {
                 Start-Sleep -Seconds $rndWait
                 $groupName = $($group.displayName)
                 if ($groupName.length -gt 120) {
                     #shrinking group name to less than 120 characters
-                    $groupName = $groupName[0..120] -join ''
+                    $groupName = $groupName[0..119] -join ''
                 }
 
                 if (!(Get-MDMGroup -groupName $groupName)) {
@@ -1072,6 +1075,7 @@ do {
                     }
                     else {
                         New-MDMGroup -JSON $groupJSON | Out-Null
+                        $createdGroupsCount ++
                     }
                     Write-Host "Group $($group.displayName) created successfully." -ForegroundColor Green
                 }
@@ -1080,7 +1084,7 @@ do {
                     continue
                 }
             }
-            Write-Host "Successfully created $($groupsArray.Count) new group(s) in Microsoft Entra ID." -ForegroundColor Green
+            Write-Host "Successfully created $createdGroupsCount new group(s) in Microsoft Entra ID." -ForegroundColor Green
         }
     }
 
@@ -1090,4 +1094,4 @@ do {
     Clear-Host
 }
 until ($continueScript -eq '0')
-#endregion script
+#endregion
