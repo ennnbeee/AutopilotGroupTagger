@@ -1,6 +1,6 @@
 <#PSScriptInfo
 
-.VERSION 0.7.1
+.VERSION 0.7.2
 .GUID 63c8809e-5c8a-4ddc-82a4-29706992802f
 .AUTHOR Nick Benton
 .COMPANYNAME
@@ -13,6 +13,7 @@
 .REQUIREDSCRIPTS
 .EXTERNALSCRIPTDEPENDENCIES
 .RELEASENOTES
+v0.7.2 - Minor bug fixes and improvements
 v0.7.1 - Cosmetic changes
 v0.7.0 - Updated to support re-running of the script and other bug fixes
 v0.6.0 - Supports unblocking of Autopilot devices
@@ -619,7 +620,7 @@ function Read-YesNoChoice {
 
     return $host.ui.PromptForChoice($Title, $Message, $Options, $DefaultOption)
 }
-#endregion Functions
+#endregion
 
 #region variables
 $modules = @('Microsoft.Graph.Authentication', 'Microsoft.PowerShell.ConsoleGuiTools')
@@ -627,41 +628,37 @@ $requiredScopes = @('Device.Read.All', 'DeviceManagementServiceConfig.ReadWrite.
 [String[]]$scopes = $requiredScopes -join ', '
 $rndWait = Get-Random -Minimum 1 -Maximum 2
 $continueScript = ''
-#endregion variables
+#endregion
 
 #region intro
 Clear-Host
 Write-Host '
- _______         __                __ __         __
-|   _   |.--.--.|  |_.-----.-----.|__|  |.-----.|  |_' -ForegroundColor Cyan -NoNewline
+░█▀█░█░█░▀█▀░█▀█░█▀█░▀█▀░█░░░█▀█░▀█▀
+░█▀█░█░█░░█░░█░█░█▀▀░░█░░█░░░█░█░░█░
+░▀░▀░▀▀▀░░▀░░▀▀▀░▀░░░▀▀▀░▀▀▀░▀▀▀░░▀░' -ForegroundColor Cyan
 Write-Host '
-|       ||  |  ||   _|  _  |  _  ||  |  ||  _  ||   _|' -ForegroundColor DarkCyan -NoNewline
+░█▀▀░█▀▄░█▀█░█░█░█▀█
+░█░█░█▀▄░█░█░█░█░█▀▀
+░▀▀▀░▀░▀░▀▀▀░▀▀▀░▀░░' -ForegroundColor Red
 Write-Host '
-|___|___||_____||____|_____|   __||__|__||_____||____|
-                           |__|
-' -ForegroundColor blue
-Write-Host '
- _______                          _______
-|     __|.----.-----.--.--.-----.|_     _|.---.-.-----.-----.-----.----.
-|    |  ||   _|  _  |  |  |  _  |  |   |  |  _  |  _  |  _  |  -__|   _|
-|_______||__| |_____|_____|   __|  |___|  |___._|___  |___  |_____|__|
-                          |__|                  |_____|_____|
-' -ForegroundColor Green
+░▀█▀░█▀█░█▀▀░█▀▀░█▀▀░█▀▄
+░░█░░█▀█░█░█░█░█░█▀▀░█▀▄
+░░▀░░▀░▀░▀▀▀░▀▀▀░▀▀▀░▀░▀' -ForegroundColor DarkRed
 
-Write-Host 'AutopilotGroupTagger - Update Autopilot devices in bulk.' -ForegroundColor Green
-Write-Host 'Nick Benton - oddsandendpoints.co.uk' -NoNewline;
-Write-Host ' | Version' -NoNewline; Write-Host ' 0.7.1 Public Preview' -ForegroundColor Yellow -NoNewline
-Write-Host ' | Last updated: ' -NoNewline; Write-Host '2026-02-23' -ForegroundColor Magenta
+Write-Host "`nAutopilotGroupTagger - Update Autopilot devices in bulk." -ForegroundColor Green
+Write-Host "`nNick Benton - oddsandendpoints.co.uk" -NoNewline;
+Write-Host ' | Version' -NoNewline; Write-Host ' 0.7.2 Public Preview' -ForegroundColor Yellow -NoNewline
+Write-Host ' | Last updated: ' -NoNewline; Write-Host '2026-05-06' -ForegroundColor Magenta
 Write-Host "`nIf you have any feedback, please open an issue at https://github.com/ennnbeee/AutopilotGroupTagger/issues" -ForegroundColor Cyan
 Start-Sleep -Seconds $rndWait
-#endregion intro
+#endregion
 
 #region preflight
 if ($PSVersionTable.PSVersion.Major -eq 5) {
     Write-Host "`nWARNING: PowerShell 5 is not supported, use PowerShell 7.2 or later." -ForegroundColor Yellow
     exit
 }
-#endregion preflight
+#endregion
 
 #region module check
 foreach ($module in $modules) {
@@ -674,7 +671,7 @@ foreach ($module in $modules) {
         Import-Module -Name $module -Force
     }
 }
-#endregion module check
+#endregion
 
 #region app auth
 try {
@@ -699,7 +696,7 @@ catch {
     Write-Error $_.Exception.Message
     exit
 }
-#endregion app auth
+#endregion
 
 #region scopes
 $currentScopes = $context.Scopes
@@ -712,7 +709,7 @@ if ($missingScopes.Count -gt 0) {
     exit
 }
 Write-Host "`nAll required scope permissions are present." -ForegroundColor Green
-#endregion scopes
+#endregion
 
 #region script
 do {
@@ -766,7 +763,7 @@ do {
         $autopilotDevicesHash[$autopilotDevice.id] = $autopilotDevice
     }
     Write-Host "Found $($autopilotDevices.Count) Windows Autopilot Devices from Microsoft Intune." -ForegroundColor Green
-    #endregion discovery
+    #endregion
 
     #region choices
     $choice = ''
@@ -947,7 +944,7 @@ do {
             }
         }
     }
-    #endregion choices
+    #endregion
 
     #region group tag prompt
     if ($choice -notin @('a', 'b', 'c', 'd')) {
@@ -973,7 +970,7 @@ do {
             }
         }
     }
-    #endregion group tag prompt
+    #endregion
 
     #region Autopilot device update
     Write-Host "`nThe following $($autopilotUpdateDevices.Count) Autopilot device(s) are in scope to be updated:" -ForegroundColor Yellow
@@ -1017,7 +1014,7 @@ do {
 
     Write-Progress -Activity $progressActivity -Status 'Complete' -PercentComplete 100
     Write-Host "Successfully updated $($autopilotUpdateDevices.Count) Autopilot device(s)" -ForegroundColor Green
-    #endregion Autopilot device update
+    #endregion
 
     #region Group Creation
     if ($choice -notin @('a', 'b', 'c', 'd')) {
@@ -1084,10 +1081,10 @@ do {
         }
     }
 
-    #endregion Group Creation
+    #endregion
 
     $continueScript = Read-YesNoChoice -Title 'Continue AutopilotGroupTagger' -Message 'Do you want to update additional Autopilot device(s)?' -DefaultOption 0
     Clear-Host
 }
 until ($continueScript -eq '0')
-#endregion script
+#endregion
