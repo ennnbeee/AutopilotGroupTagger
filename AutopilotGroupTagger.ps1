@@ -649,22 +649,12 @@ Write-Host '
 ░░█░░█▀█░█░█░█░█░█▀▀░█▀▄
 ░░▀░░▀░▀░▀▀▀░▀▀▀░▀▀▀░▀░▀' -ForegroundColor DarkRed
 
-<<<<<<< HEAD
 Write-Host "`nAutopilotGroupTagger - Update Autopilot devices in bulk." -ForegroundColor Green
 Write-Host "`nNick Benton - oddsandendpoints.co.uk" -NoNewline;
 Write-Host ' | Version' -NoNewline; Write-Host ' 0.7.2 Public Preview' -ForegroundColor Yellow -NoNewline
 Write-Host ' | Last updated: ' -NoNewline; Write-Host '2026-05-06' -ForegroundColor Magenta
 Write-Host "`nIf you have any feedback, please open an issue at https://github.com/ennnbeee/AutopilotGroupTagger/issues" -ForegroundColor Cyan
 Start-Sleep -Seconds $rndWait
-=======
-Write-Host 'AutopilotGroupTagger - Update Autopilot devices in bulk.' -ForegroundColor Green
-Write-Host 'Nick Benton - oddsandendpoints.co.uk' -NoNewline;
-Write-Host ' | Version' -NoNewline; Write-Host ' 0.7.2 Public Preview' -ForegroundColor Yellow -NoNewline
-Write-Host ' | Last updated: ' -NoNewline; Write-Host '2026-04-10' -ForegroundColor Magenta
-Write-Host "`nIf you have any feedback, please open an issue at https://github.com/ennnbeee/AutopilotGroupTagger/issues" -ForegroundColor Cyan
-Start-Sleep -Seconds $rndWait
-Clear-Host
->>>>>>> 2f3ad4130e008fe0cf7f5c6e0d64fdea60e44114
 #endregion
 
 #region preflight
