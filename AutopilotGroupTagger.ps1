@@ -1,6 +1,6 @@
 <#PSScriptInfo
 
-.VERSION 0.7.2
+.VERSION 0.7.4
 .GUID 63c8809e-5c8a-4ddc-82a4-29706992802f
 .AUTHOR Nick Benton
 .COMPANYNAME
@@ -13,11 +13,9 @@
 .REQUIREDSCRIPTS
 .EXTERNALSCRIPTDEPENDENCIES
 .RELEASENOTES
-<<<<<<< HEAD
-v0.7.2 - Minor bug fixes and improvements
-=======
+v0.7.4 - Cosmetic changes and minor improvements
+v0.7.3 - Minor bug fixes and improvements
 v0.7.2 - Copilot review
->>>>>>> 2f3ad4130e008fe0cf7f5c6e0d64fdea60e44114
 v0.7.1 - Cosmetic changes
 v0.7.0 - Updated to support re-running of the script and other bug fixes
 v0.6.0 - Supports unblocking of Autopilot devices
@@ -651,7 +649,7 @@ Write-Host '
 
 Write-Host "`nAutopilotGroupTagger - Update Autopilot devices in bulk." -ForegroundColor Green
 Write-Host "`nNick Benton - oddsandendpoints.co.uk" -NoNewline;
-Write-Host ' | Version' -NoNewline; Write-Host ' 0.7.2 Public Preview' -ForegroundColor Yellow -NoNewline
+Write-Host ' | Version' -NoNewline; Write-Host ' 0.7.4 Public Preview' -ForegroundColor Yellow -NoNewline
 Write-Host ' | Last updated: ' -NoNewline; Write-Host '2026-05-06' -ForegroundColor Magenta
 Write-Host "`nIf you have any feedback, please open an issue at https://github.com/ennnbeee/AutopilotGroupTagger/issues" -ForegroundColor Cyan
 Start-Sleep -Seconds $rndWait
