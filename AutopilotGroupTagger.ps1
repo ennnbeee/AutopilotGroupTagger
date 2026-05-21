@@ -1,6 +1,6 @@
 <#PSScriptInfo
 
-.VERSION 0.7.4
+.VERSION 0.7.5
 .GUID 63c8809e-5c8a-4ddc-82a4-29706992802f
 .AUTHOR Nick Benton
 .COMPANYNAME
@@ -13,6 +13,7 @@
 .REQUIREDSCRIPTS
 .EXTERNALSCRIPTDEPENDENCIES
 .RELEASENOTES
+v0.7.5 - Updated scope requirements
 v0.7.4 - Cosmetic changes and minor improvements
 v0.7.3 - Minor bug fixes and improvements
 v0.7.2 - Copilot review
@@ -626,7 +627,8 @@ function Read-YesNoChoice {
 
 #region variables
 $modules = @('Microsoft.Graph.Authentication', 'Microsoft.PowerShell.ConsoleGuiTools')
-$requiredScopes = @('Device.Read.All', 'DeviceManagementServiceConfig.ReadWrite.All', 'DeviceManagementManagedDevices.Read.All', 'Group.ReadWrite.All')
+$requiredScopes = @('Device.Read.All', 'DeviceManagementServiceConfig.ReadWrite.All', 'DeviceManagementManagedDevices.Read.All')
+if ($createGroups) { $requiredScopes += 'Group.ReadWrite.All' }
 [String[]]$scopes = $requiredScopes -join ', '
 $rndWait = Get-Random -Minimum 1 -Maximum 2
 $continueScript = ''
@@ -647,17 +649,17 @@ Write-Host '
 ░░█░░█▀█░█░█░█░█░█▀▀░█▀▄
 ░░▀░░▀░▀░▀▀▀░▀▀▀░▀▀▀░▀░▀' -ForegroundColor DarkRed
 
-Write-Host "`nAutopilotGroupTagger - Update Autopilot devices in bulk." -ForegroundColor Green
+Write-Host "`nAutopilotGroupTagger - Update Windows Autopilot devices in bulk." -ForegroundColor Green
 Write-Host "`nNick Benton - oddsandendpoints.co.uk" -NoNewline;
-Write-Host ' | Version' -NoNewline; Write-Host ' 0.7.4 Public Preview' -ForegroundColor Yellow -NoNewline
-Write-Host ' | Last updated: ' -NoNewline; Write-Host '2026-05-06' -ForegroundColor Magenta
+Write-Host ' | Version' -NoNewline; Write-Host ' 0.7.5 Public Preview' -ForegroundColor Yellow -NoNewline
+Write-Host ' | Last updated: ' -NoNewline; Write-Host '2026-05-21' -ForegroundColor Magenta
 Write-Host "`nIf you have any feedback, please open an issue at https://github.com/ennnbeee/AutopilotGroupTagger/issues" -ForegroundColor Cyan
 Start-Sleep -Seconds $rndWait
 #endregion
 
 #region preflight
-if ($PSVersionTable.PSVersion.Major -eq 5) {
-    Write-Host "`nWARNING: PowerShell 5 is not supported, use PowerShell 7.2 or later." -ForegroundColor Yellow
+if ($PSVersionTable.PSVersion.Major -ne 7) {
+    Write-Host "`nWARNING: Please use PowerShell 7.2 or later." -ForegroundColor Yellow
     exit
 }
 #endregion
@@ -715,11 +717,9 @@ Write-Host "`nAll required scope permissions are present." -ForegroundColor Gree
 
 #region script
 do {
-
     #region discovery
     Start-Sleep -Seconds 2  # Delay to allow for Graph API to catch up
-    Write-Host ''
-    Write-Host 'Getting all Entra ID Windows computer objects...' -ForegroundColor Cyan
+    Write-Host "`nGetting all Entra ID Windows computer objects..." -ForegroundColor Cyan
     $entraDevices = Get-EntraIDObject -device -os Windows
     $entraDevicesHash = @{}
     foreach ($entraDevice in $entraDevices) {
@@ -727,17 +727,14 @@ do {
     }
     Write-Host "Found $($entraDevices.Count) Windows devices and associated IDs from Entra ID." -ForegroundColor Green
 
-    Write-Host ''
-    Write-Host 'Getting all Windows Intune devices...' -ForegroundColor Cyan
+    Write-Host "`nGetting all Windows Intune devices..." -ForegroundColor Cyan
     $intuneDevices = Get-ManagedDevice -os Windows
     $intuneDevicesHash = @{}
     foreach ($intuneDevice in $intuneDevices) {
         $intuneDevicesHash[$intuneDevice.id] = $intuneDevice
     }
     Write-Host "Found $($intuneDevices.Count) Windows device objects and associated IDs from Microsoft Intune." -ForegroundColor Green
-    Write-Host ''
-
-    Write-Host 'Getting all Windows Autopilot devices...' -ForegroundColor Cyan
+    Write-Host "`nGetting all Windows Autopilot devices..." -ForegroundColor Cyan
     $apDevices = Get-AutopilotDevice
     $autopilotDevices = @()
     foreach ($apDevice in $apDevices) {
