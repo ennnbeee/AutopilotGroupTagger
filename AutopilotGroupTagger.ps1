@@ -1,6 +1,6 @@
 <#PSScriptInfo
 
-.VERSION 0.7.5
+.VERSION 0.7.6
 .GUID 63c8809e-5c8a-4ddc-82a4-29706992802f
 .AUTHOR Nick Benton
 .COMPANYNAME
@@ -13,6 +13,7 @@
 .REQUIREDSCRIPTS
 .EXTERNALSCRIPTDEPENDENCIES
 .RELEASENOTES
+v0.7.6 - Updated authentication logic to allow for existing graph sessions
 v0.7.5 - Updated scope requirements
 v0.7.4 - Cosmetic changes and minor improvements
 v0.7.3 - Minor bug fixes and improvements
@@ -651,8 +652,8 @@ Write-Host '
 
 Write-Host "`nAutopilotGroupTagger - Update Windows Autopilot devices in bulk." -ForegroundColor Green
 Write-Host "`nNick Benton - oddsandendpoints.co.uk" -NoNewline;
-Write-Host ' | Version' -NoNewline; Write-Host ' 0.7.5 Public Preview' -ForegroundColor Yellow -NoNewline
-Write-Host ' | Last updated: ' -NoNewline; Write-Host '2026-05-21' -ForegroundColor Magenta
+Write-Host ' | Version' -NoNewline; Write-Host ' 0.7.6 Public Preview' -ForegroundColor Yellow -NoNewline
+Write-Host ' | Last updated: ' -NoNewline; Write-Host '2026-05-28' -ForegroundColor Magenta
 Write-Host "`nIf you have any feedback, please open an issue at https://github.com/ennnbeee/AutopilotGroupTagger/issues" -ForegroundColor Cyan
 Start-Sleep -Seconds $rndWait
 #endregion
@@ -679,18 +680,24 @@ foreach ($module in $modules) {
 
 #region app auth
 try {
-    if (!$tenantId) {
-        Write-Host 'Connecting using interactive authentication' -ForegroundColor Yellow
-        Connect-MgGraph -Scopes $scopes -NoWelcome -ErrorAction Stop
+    if (Get-MgContext) {
+        Write-Host 'Existing Graph session detected, using current authentication context.' -ForegroundColor Yellow
+
     }
     else {
-        if ((!$appId -and !$appSecret) -or ($appId -and !$appSecret) -or (!$appId -and $appSecret)) {
-            Write-Host 'Missing App Details, connecting using user authentication' -ForegroundColor Yellow
-            Connect-ToGraph -tenantId $tenantId -Scopes $scopes -ErrorAction Stop
+        if (!$tenantId) {
+            Write-Host 'Connecting using interactive authentication' -ForegroundColor Yellow
+            Connect-MgGraph -Scopes $scopes -NoWelcome -ErrorAction Stop
         }
         else {
-            Write-Host 'Connecting using App authentication' -ForegroundColor Yellow
-            Connect-ToGraph -tenantId $tenantId -appId $appId -appSecret $appSecret -ErrorAction Stop
+            if ((!$appId -and !$appSecret) -or ($appId -and !$appSecret) -or (!$appId -and $appSecret)) {
+                Write-Host 'Missing App Details, connecting using user authentication' -ForegroundColor Yellow
+                Connect-ToGraph -tenantId $tenantId -Scopes $scopes -ErrorAction Stop
+            }
+            else {
+                Write-Host 'Connecting using App authentication' -ForegroundColor Yellow
+                Connect-ToGraph -tenantId $tenantId -appId $appId -appSecret $appSecret -ErrorAction Stop
+            }
         }
     }
     $context = Get-MgContext
