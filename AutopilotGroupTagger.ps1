@@ -1,6 +1,7 @@
+#Requires -Version 7
 <#PSScriptInfo
 
-.VERSION 0.7.6
+.VERSION 0.7.7
 .GUID 63c8809e-5c8a-4ddc-82a4-29706992802f
 .AUTHOR Nick Benton
 .COMPANYNAME
@@ -13,6 +14,7 @@
 .REQUIREDSCRIPTS
 .EXTERNALSCRIPTDEPENDENCIES
 .RELEASENOTES
+v0.7.7 - Updated authentication logic
 v0.7.6 - Updated authentication logic to allow for existing graph sessions
 v0.7.5 - Updated scope requirements
 v0.7.4 - Cosmetic changes and minor improvements
@@ -627,6 +629,7 @@ function Read-YesNoChoice {
 #endregion
 
 #region variables
+$graphTestEndpoint = 'deviceManagement/windowsAutopilotDeviceIdentities'
 $modules = @('Microsoft.Graph.Authentication', 'Microsoft.PowerShell.ConsoleGuiTools')
 $requiredScopes = @('Device.Read.All', 'DeviceManagementServiceConfig.ReadWrite.All', 'DeviceManagementManagedDevices.Read.All')
 if ($createGroups) { $requiredScopes += 'Group.ReadWrite.All' }
@@ -652,17 +655,10 @@ Write-Host '
 
 Write-Host "`nAutopilotGroupTagger - Update Windows Autopilot devices in bulk." -ForegroundColor Green
 Write-Host "`nNick Benton - oddsandendpoints.co.uk" -NoNewline;
-Write-Host ' | Version' -NoNewline; Write-Host ' 0.7.6 Public Preview' -ForegroundColor Yellow -NoNewline
-Write-Host ' | Last updated: ' -NoNewline; Write-Host '2026-05-28' -ForegroundColor Magenta
+Write-Host ' | Version' -NoNewline; Write-Host ' 0.7.7 Public Preview' -ForegroundColor Yellow -NoNewline
+Write-Host ' | Last updated: ' -NoNewline; Write-Host '2026-06-03' -ForegroundColor Magenta
 Write-Host "`nIf you have any feedback, please open an issue at https://github.com/ennnbeee/AutopilotGroupTagger/issues" -ForegroundColor Cyan
 Start-Sleep -Seconds $rndWait
-#endregion
-
-#region preflight
-if ($PSVersionTable.PSVersion.Major -ne 7) {
-    Write-Host "`nWARNING: Please use PowerShell 7.2 or later." -ForegroundColor Yellow
-    exit
-}
 #endregion
 
 #region module check
@@ -681,8 +677,17 @@ foreach ($module in $modules) {
 #region app auth
 try {
     if (Get-MgContext) {
-        Write-Host 'Existing Graph session detected, using current authentication context.' -ForegroundColor Yellow
-
+        Write-Host 'Existing Graph session detected: trying to use current authentication context.' -ForegroundColor cyan
+        try {
+            Invoke-MgGraphRequest -Uri "https://graph.microsoft.com/beta/$graphTestEndpoint" -Method Get -ErrorAction Stop | Out-Null
+            $authOk = $true
+        }
+        catch {
+            $authOk = $false
+        }
+    }
+    if ($authOk -eq $true) {
+        Write-Host 'Existing Graph session detected: using current authentication context.' -ForegroundColor green
     }
     else {
         if (!$tenantId) {
