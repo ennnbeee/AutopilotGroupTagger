@@ -55,7 +55,9 @@ Also options to [unblock](https://learn.microsoft.com/en-us/autopilot/whats-new#
 
 ## 🔄 Updates
 
-- **v0.7.0**
+- **v0.8.0**
+  - Support for prefixing or suffixing existing group tags
+- v0.7.0
   - Updated to allow for re-running of the script
   - Bug fixes and UI improvements
 - v0.6.0
